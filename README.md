@@ -2,7 +2,7 @@
 
 Reusable Agent Skills for building with [Gradium](https://gradium.ai) —
 text-to-speech, speech-to-text, speech-to-speech translation, voice
-cloning, pronunciation control, and talking-video workflows.
+cloning, pronunciation control, talking-video, and live-avatar workflows.
 
 Skills in this repo follow the `SKILL.md` package format: each skill
 lives in its own folder with a required `SKILL.md` file and optional
@@ -19,6 +19,7 @@ the bundled scripts are tested end to end.
 | `gradium-speech-translation` | Live speech-to-speech translation, dubbing workflows, re-voicing. Ships `scripts/s2s.py`. |
 | `gradium-voice-cloning` | Clone voices from a short sample and manage the voice library. |
 | `gradium-pruna-video` | Talking videos: drive Pruna AI video models with Gradium-generated speech. Ships `scripts/voice_video.py`. |
+| `gradium-live-avatar-agent` | Build a realtime voice agent with Gradium Voice Design/STT/TTS, LiveKit orchestration, and a LemonSlice animated avatar. |
 | `gradium-api` | Wire-level REST + WebSocket reference for any language or edge runtime. |
 | `gradium-sdk` | Python SDK (`pip install gradium`): async client, call shapes, result objects, CLI. |
 | `gradium-docs` | Maps any task to the exact page of docs.gradium.ai. |
@@ -30,6 +31,9 @@ the bundled scripts are tested end to end.
 - A Gradium API key in the `GRADIUM_API_KEY` environment variable
   (the `gradium-setup-api-key` skill walks through setup and validation).
 - `gradium-pruna-video` additionally needs a `PRUNA_API_KEY`.
+- `gradium-live-avatar-agent` additionally needs a `LEMONSLICE_API_KEY`
+  and LiveKit credentials. It uses LiveKit Inference for the default LLM
+  when credits are available, or a user-provided LLM endpoint otherwise.
 - Bundled scripts use Python 3.10+ with `requests` (plus `websockets`
   for streaming); `ffmpeg` is recommended for audio conversion.
 
