@@ -82,7 +82,44 @@ prediction → poll → download → duration check.
 5. **Download** the `generation_url` (send the `apikey` header) and
    save as `.mp4`.
 
+## Example prompts (battle-tested)
+
+`video_prompt` shapes everything the lips don't. These worked in
+production; adapt the subject, keep the structure — articulation
+first, then constraints phrased as physical facts:
+
+- **Human presenter / spokesperson**
+  `"The person speaks with subtle hand gestures and natural head
+  movement, warm eye contact with the camera, soft office lighting."`
+- **Character or statue, strong lip-sync, still eyes** (the most
+  reliable pattern found):
+  `"The classical marble statue is speaking: its lips and jaw move
+  vigorously and precisely with every syllable, the mouth clearly
+  opening and closing in sync with the audio. The rest of the statue
+  is rigid carved stone. The eyes are solid sculpted marble — because
+  they are stone they cannot blink, cannot close and cannot move.
+  Plain black background."`
+  with `"negative_prompt": "pupils, irises, human eyes, blinking,
+  closed eyes, text, captions, watermark"`
+- **Closed eyes that stay closed**: use a source image whose lids are
+  already closed (harvest a frame from a previous render), plus
+  `"The eyes remain completely closed for the entire video: smooth
+  carved stone eyelids, never opening."`
+- **Anti-text insurance** for speech full of IDs/numbers, appended to
+  any prompt: `"The frame contains only the subject on a plain
+  background — absolutely no text, no letters, no numbers, no
+  subtitles anywhere."` (Reduces but does not guarantee; sweep frames
+  after.)
+
 ## Judging the result
+
+Avatar generation is a diffusion lottery — grade every render before
+showing anyone, and read
+[references/render-quirks.md](references/render-quirks.md) for the
+full battle-tested playbook (text hallucination on alphanumeric audio,
+eye re-animation, first-frame-equals-source, source prep with
+`p-image-edit`, when to fix with ffmpeg instead of re-rolling).
+The short version:
 
 - `ffprobe` the output: video duration should match the audio duration
   (avatar mode) — a big mismatch means the audio didn't take.
@@ -90,8 +127,14 @@ prediction → poll → download → duration check.
   and round-trip through Gradium STT: the transcript should match your
   script. Silent output in scene mode usually means `save_audio` was
   omitted.
-- Lip-sync quality is best judged by eye; regenerate with a `seed` for
-  reproducible comparisons.
+- Build two frame montages and *look at them*: 6–8 frames evenly
+  spaced (catches blinks, gaze drift, hallucinated text — sparse
+  checks miss them), and frames at speech-word midpoints (mouth must
+  be visibly articulating; a closed mouth mid-word means lip-sync
+  failed).
+- Re-roll with a new `seed` when a take fails; prefer cheap ffmpeg
+  fixes (crop, drawbox, fade-in) when the flaw sits outside the
+  subject.
 
 ## Common mistakes
 
@@ -106,6 +149,17 @@ prediction → poll → download → duration check.
    whole point of this skill is to pass `audio` instead.
 6. Auth header is `apikey` (lowercase, no prefix) — not `x-api-key`
    (that's Gradium) and not `Authorization: Bearer`.
+7. Long `negative_prompt` lists freeze the face — a negative stuffed
+   with "eye movement, head movement, …" suppressed lip-sync entirely.
+   Lead the positive prompt with strong mouth articulation and keep
+   negatives to a handful of terms.
+8. `negative_prompt_strength` appears in docs but the API rejects it
+   (400 "additional properties forbidden") — send `negative_prompt`
+   alone.
+9. Speech full of IDs/serials/phone numbers can make the model burn
+   gibberish pseudo-captions into the frame, and the first frame is
+   essentially your source image — sweep frames before shipping (see
+   [references/render-quirks.md](references/render-quirks.md)).
 
 ## References
 
