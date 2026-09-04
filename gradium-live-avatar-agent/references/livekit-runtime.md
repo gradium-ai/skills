@@ -10,6 +10,7 @@
 - LiveKit CLI, SDK, and MCP workflow
 - Static and per-session characters
 - Agent prompt and extension seam
+- Security and privacy boundaries
 
 Use the first-party LiveKit plugins when building the standard Python runtime:
 
@@ -37,16 +38,27 @@ dependencies = [
 ]
 ```
 
+Resolve and commit a lockfile for the generated project. Version ranges describe
+compatibility; the lockfile records the exact reviewed build. Update dependencies
+deliberately and rerun the mocked provider and dispatch tests.
+
 ## Canonical worker order
 
 Keep this lifecycle order. It makes LemonSlice the published audio/video output
 for the voice agent and prevents a duplicate audio track.
 
 ```python
+max_completion_tokens = int(os.getenv("LLM_MAX_COMPLETION_TOKENS", "256"))
+if not 128 <= max_completion_tokens <= 1024:
+    raise ValueError("LLM_MAX_COMPLETION_TOKENS must be between 128 and 1024")
+
 session = AgentSession(
     llm=inference.LLM(
         model=os.getenv("LIVEKIT_LLM", "google/gemma-4-31b-it"),
-        extra_kwargs={"temperature": 0.3, "max_completion_tokens": 96},
+        extra_kwargs={
+            "temperature": 0.3,
+            "max_completion_tokens": max_completion_tokens,
+        },
     ),
     stt=gradium.STT(language=language),
     tts=gradium.TTS(
@@ -68,7 +80,7 @@ avatar = lemonslice.AvatarSession(
     agent_image=pil_image,
     agent_prompt=movement_prompt,
 )
-await avatar.start(session, room=ctx.room)
+await asyncio.wait_for(avatar.start(session, room=ctx.room), timeout=30)
 
 await session.start(
     room=ctx.room,
@@ -76,14 +88,24 @@ await session.start(
     room_options=room_io.RoomOptions(audio_output=False),
 )
 
-await utils.wait_for_participant(ctx.room, identity=avatar.avatar_identity)
-await utils.wait_for_track_publication(
-    ctx.room,
-    identity=avatar.avatar_identity,
-    kind=rtc.TrackKind.KIND_VIDEO,
+await asyncio.wait_for(
+    utils.wait_for_participant(ctx.room, identity=avatar.avatar_identity),
+    timeout=45,
+)
+await asyncio.wait_for(
+    utils.wait_for_track_publication(
+        ctx.room,
+        identity=avatar.avatar_identity,
+        kind=rtc.TrackKind.KIND_VIDEO,
+    ),
+    timeout=45,
 )
 session.generate_reply()
 ```
+
+Catch startup timeouts at the job boundary, close any started session, and expose
+only a small provider-unavailable error to the client. Do not leave a worker job
+waiting indefinitely or include upstream response bodies in browser errors.
 
 Gradium already supplies streaming speech boundaries and final transcripts.
 Using `turn_detection="stt"` avoids adding a second long endpointing wait after
@@ -120,6 +142,7 @@ LIVEKIT_URL=wss://your-project.livekit.cloud
 LIVEKIT_API_KEY=
 LIVEKIT_API_SECRET=
 AGENT_NAME=gradium-live-avatar
+LLM_MAX_COMPLETION_TOKENS=256
 ```
 
 `LEMONSLICE_API_KEY` is required for an end-to-end avatar session. Tell the user
@@ -137,6 +160,11 @@ AVATAR_IMAGE_URL=
 
 Use a named `AgentServer` session and dispatch the same `AGENT_NAME` from the
 token server. Never send `LIVEKIT_API_SECRET` to the browser.
+
+For token issuance, dispatch authorization, input validation, and production
+deployment rules, follow
+[security-and-privacy.md](security-and-privacy.md). An unauthenticated endpoint
+must bind to loopback and must not be exposed through a tunnel.
 
 ## LLM routing
 
@@ -161,7 +189,7 @@ llm = openai.LLM(
     base_url=os.environ["LLM_BASE_URL"],
     api_key=os.getenv("LLM_API_KEY", "not-needed"),
     temperature=0.3,
-    max_completion_tokens=96,
+    max_completion_tokens=int(os.getenv("LLM_MAX_COMPLETION_TOKENS", "256")),
 )
 ```
 
@@ -171,19 +199,30 @@ make a small Chat Completions request before integrating it. Keep the API key
 server-side. `openai.LLM` preserves the normal LiveKit tool/function-calling
 extension seam for compatible models.
 
+Treat the base URL as trusted administrator configuration, not a browser or
+per-session field. Prefer HTTPS for non-loopback endpoints and tell the user that
+the configured service receives the system prompt, conversation context, and
+transcribed speech. Put finite connect/read timeouts on discovery and completion
+requests and cap response sizes.
+
 OpenAI-compatible endpoints vary in streaming reliability. For a short-form
 voice agent, validate the completed model turn before handing it to TTS:
 
-- Retry once when a request completes without text or tool calls, then speak a
-  brief deterministic fallback instead of leaving the caller in silence.
+- Retry once when a request completes without text or tool calls. For the retry,
+  replace the long primary instruction with a compact safety-preserving
+  instruction and include only the latest few user/assistant messages. Then
+  speak a brief deterministic fallback instead of leaving the caller in silence.
 - Remove adjacent repeated sentences or repeated sentence blocks before TTS.
 - Log only the guard action and character counts by default, not transcript
   contents.
 
-This guard may buffer a short answer until generation completes, so keep the
-completion cap small. Preserve tool-call chunks if the agent later gains tools;
-do not turn the guard into a text-only abstraction that breaks LiveKit's normal
-function-calling seam.
+This guard may buffer a short answer until generation completes. Keep the spoken
+response short, but leave enough completion budget for models that emit internal
+reasoning before visible text; `256` is the baseline and should remain
+configurable. Preserve tool-call chunks and their ordering if the agent later
+gains tools; do not turn the guard into a text-only abstraction that breaks
+LiveKit's normal function-calling seam. Test text, empty, repeated, and tool-call
+turns independently.
 
 ## Local LiveKit limitation
 
@@ -254,6 +293,12 @@ LiveKit dispatch metadata. Store large or persistent images outside job metadata
 and pass an opaque ID or short-lived URL. Do not embed image data in the
 participant JWT.
 
+Parse metadata with an exact schema, reject unknown keys and control characters,
+and cap every string and the serialized payload. The server—not the browser—must
+choose the dispatched agent and deployment. Resolve opaque asset IDs through an
+authorized server-side lookup rather than accepting filesystem paths or arbitrary
+URLs from the participant.
+
 ## Agent prompt
 
 Treat the user's description of what the agent should do as the source of truth.
@@ -270,3 +315,13 @@ able to extend it through LiveKit's normal tool/function-calling mechanism
 without changing Gradium STT/TTS, LemonSlice startup, room output, or token
 dispatch. Point to the `Agent` subclass and its tool registration as the place
 to extend behavior; avoid adding an abstraction layer solely for future use.
+
+Before adding tools, define per-tool authorization and argument validation that
+does not depend on the character prompt. A user-authored persona is never
+authority to read secrets, access unrelated files, or perform external actions.
+
+## Security and privacy boundaries
+
+Use [security-and-privacy.md](security-and-privacy.md) for the required trust
+boundaries around creative input, image handling, token issuance, dispatch,
+microphone recovery, telemetry, provider data flows, secrets, and dependencies.

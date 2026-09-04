@@ -10,6 +10,11 @@ replace it with a stock voice merely to make the scaffold easier. If the user
 explicitly supplies a permanent Gradium voice ID, skip provisioning and use it
 directly.
 
+When the requested direction imitates an identifiable real person, confirm that
+the user is authorized to use that likeness and voice direction or revise it to
+an original description. Never claim that a designed voice is the depicted
+person or facilitate deceptive impersonation.
+
 ## Image and voice fit check
 
 Inspect the reference image before generating a candidate. Ground suggestions
@@ -79,6 +84,11 @@ Use `https://api.gradium.ai/api` with the `x-api-key` header.
 6. Delete rejected or failed candidates with
    `DELETE /voice-generator/embeddings/<vox_emb_id>`.
 
+Wrap candidate handling in cleanup logic so rejection, failed audition, timeout,
+or interruption deletes the temporary embedding once its ID is known. Do not
+automatically retry credit-consuming generation or promotion requests unless the
+API operation is explicitly idempotent.
+
 ## Guardrails
 
 - Always use Gradium Voice Design to create a new voice and Gradium TTS to render
@@ -89,9 +99,13 @@ Use `https://api.gradium.ai/api` with the `x-api-key` header.
 - Use the same TTS model for the audition and live runtime.
 - Patch RIFF/data sizes if a streamed WAV contains placeholder lengths.
 - Never log API keys or return them to browser code.
+- Apply finite connect and read timeouts to every request, check HTTP status and
+  response shape before using IDs, cap downloaded audition bytes, and show
+  sanitized errors without upstream bodies or headers.
 - Do not save a candidate until the user has heard and approved it.
 - Generate one candidate at a time by default. Ask whether to keep it or create
   another rather than repeatedly spending API credits.
 - Tests should mock every Gradium endpoint and assert the lifecycle order.
+- Keep auditions outside the public web root and ignore them in version control.
 
 If the user already has a permanent voice ID, skip this entire workflow.
