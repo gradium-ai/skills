@@ -104,6 +104,10 @@ as an end-to-end smoke test of the skills.
   provider-specific metadata.
 - `migrate-to-gradium/agents/openai.yaml` is Codex UI metadata. Other
   agents can ignore it and read `SKILL.md` plus the referenced files.
+- Run `python scripts/validate_repo.py` before opening a pull request. CI checks
+  skill metadata, local links, Python syntax, oversized files, environment
+  files, obvious credentials, and temporary tunnel URLs.
+- Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## Support
 

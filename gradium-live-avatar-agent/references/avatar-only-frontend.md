@@ -38,18 +38,34 @@ cancellation, noise suppression, and automatic gain control.
 
 Keep a lightweight microphone health check while the call is active. Observe
 whether the local publication exists and its underlying media track is enabled
-and `live`; republish the microphone once if the track unexpectedly ends. Send
-connection and microphone health events to a server-side diagnostic endpoint,
-but do not include transcripts, device labels, tokens, or other sensitive data.
-This telemetry is background-only and must not add a debug panel to the avatar
-surface.
+and `live`; republish the microphone once if the track unexpectedly ends, but
+only while an explicit `desiredMicEnabled` state is true and the call remains
+active. Never recover capture after the user muted, ended the call, denied or
+revoked permission, removed the device, or left the page.
+
+Send connection and microphone health events to a server-side diagnostic
+endpoint only when diagnostics are enabled. Authenticate and rate-limit it,
+accept a small allowlisted event schema, and do not include transcripts, audio,
+device labels, room tokens, authorization headers, upstream responses, or
+arbitrary exception objects. This telemetry is background-only and must not add
+a debug panel to the avatar surface.
 
 On hangup, stop the health check, disconnect the room, detach tracks, remove
 generated audio elements, and restore the still portrait.
 
 The token endpoint must remain server-side and grant only the room permissions
 the participant needs. Never place provider secrets in HTML, JavaScript bundles,
-query strings, or browser storage.
+query strings, or browser storage. An unauthenticated endpoint is permitted only
+for a loopback-bound development server. For a hosted app, follow
+[security-and-privacy.md](security-and-privacy.md): authenticate the caller,
+rate-limit starts, generate opaque room and participant identities server-side,
+reject browser-selected room configuration or grants, and issue a short-lived
+token limited to subscription and microphone publication.
+
+Insert status and error strings with `textContent`, not `innerHTML`. A hosted app
+should send a restrictive Content Security Policy and Permissions Policy that
+allow only its own assets, the configured LiveKit connection, and microphone
+capture needed for an active call.
 
 ## Visual direction
 
