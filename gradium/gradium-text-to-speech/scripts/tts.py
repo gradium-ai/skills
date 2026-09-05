@@ -56,7 +56,7 @@ def main() -> int:
         body["json_config"] = cfg
 
     r = requests.post("https://api.gradium.ai/api/post/speech/tts",
-                      json=body, headers={"x-api-key": key})
+                      json=body, headers={"x-api-key": key}, timeout=120)
     if r.status_code != 200:
         print(f"HTTP {r.status_code}: {r.text[:500]}", file=sys.stderr)
         return 1

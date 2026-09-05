@@ -1,121 +1,128 @@
 # Gradium Skills
 
-Reusable Agent Skills for building with [Gradium](https://gradium.ai) —
-text-to-speech, speech-to-text, speech-to-speech translation, voice
-cloning, pronunciation control, talking-video, and live-avatar workflows.
+Agent Skills for building voice products with [Gradium](https://gradium.ai):
+text-to-speech, speech-to-text, live translation, voice cloning, talking
+video, and live avatars. They work with Claude Code, Codex, OpenClaw, and any
+agent that reads the `SKILL.md` format.
 
-Skills in this repo follow the `SKILL.md` package format: each skill
-lives in its own folder with a required `SKILL.md` file and optional
-resources such as `references/` and `scripts/`. Every endpoint, field
-name, and behavior note was verified against the live Gradium API, and
-the bundled scripts are tested end to end.
+Skills are grouped by the tool they drive:
 
-## Available skills
+```text
+gradium/     Gradium voice API: TTS, STT, translation, cloning, SDK, docs, migration
+pruna/       Gradium voices driving Pruna AI talking-video models
+lemonslice/  Gradium voice agents with a LemonSlice animated face (via LiveKit)
+```
 
-| Skill | Purpose |
+Each skill is a self-contained folder with a `SKILL.md` and, where useful,
+`references/` for deeper detail and `scripts/` that run standalone. Endpoints,
+field names, and behavior notes were checked against the live APIs.
+
+## Skills
+
+### `gradium/` — the voice API
+
+| Skill | What it does |
 | --- | --- |
-| `gradium-text-to-speech` | Generate speech: one-shot and streaming synthesis, voice settings, word-level timestamps, pauses, pronunciation fixes. Ships `scripts/tts.py` and the flagship voice catalog. |
-| `gradium-speech-to-text` | Transcribe audio: batch and realtime, semantic VAD turn-taking, keyword boosting, subtitle (SRT) output. Ships `scripts/transcribe.py`. |
-| `gradium-speech-translation` | Live speech-to-speech translation, dubbing workflows, re-voicing. Ships `scripts/s2s.py`. |
-| `gradium-voice-cloning` | Clone voices from a short sample and manage the voice library. |
-| `gradium-pruna-video` | Talking videos: drive Pruna AI video models with Gradium-generated speech. Ships `scripts/voice_video.py`. |
-| `gradium-live-avatar-agent` | Build a realtime voice agent with Gradium Voice Design/STT/TTS, LiveKit orchestration, and a LemonSlice animated avatar. |
-| `gradium-api` | Wire-level REST + WebSocket reference for any language or edge runtime. |
-| `gradium-sdk` | Python SDK (`pip install gradium`): async client, call shapes, result objects, CLI. |
-| `gradium-docs` | Maps any task to the exact page of docs.gradium.ai. |
-| `gradium-setup-api-key` | Key setup and validation, safe key handling, browser-token pattern. |
-| `migrate-to-gradium` | Switch voice API integrations from other providers to Gradium. |
+| `gradium-text-to-speech` | Text in, speech out. REST for files, WebSocket for streaming LLM output. Speed, pauses, pronunciation fixes, word timestamps, telephony formats. Ships `tts.py` and the flagship voice catalog. |
+| `gradium-speech-to-text` | Audio in, text out. Batch and realtime, semantic turn-taking for voice agents, keyword boosting so product names come out right, SRT subtitles. Ships `transcribe.py`. |
+| `gradium-speech-translation` | Speech in one language, speech out in another. Dubbing, live interpretation, and re-voicing a recording. Ships `s2s.py`. |
+| `gradium-voice-cloning` | Clone a voice from about ten seconds of audio and manage the voice library. Includes consent guidance. |
+| `gradium-sdk` | The Python SDK (`pip install gradium`): async client, call shapes, result objects, CLI. |
+| `gradium-api` | Wire-level REST and WebSocket reference for any language or edge runtime, plus error shapes. |
+| `gradium-docs` | Maps a task to the exact page on docs.gradium.ai so an agent fetches one page instead of crawling. |
+| `gradium-setup-api-key` | Check, obtain, and validate an API key without ever pasting it into chat. Browser token pattern. |
+| `migrate-to-gradium` | Move an ElevenLabs, Cartesia, or Deepgram integration to Gradium with minimal adapter changes. |
+
+### `pruna/` — talking video
+
+| Skill | What it does |
+| --- | --- |
+| `gradium-pruna-video` | Pipe a Gradium voice (flagship or cloned) into Pruna's `p-video-avatar` and `p-video` models to make a portrait or scene talk. Ships `voice_video.py` for the full pipeline and `grade_render.py` for frame-by-frame quality checks. |
+| `gradium-pruna-designed-avatar` | Design a brand-new Gradium voice to match a portrait, audition and approve it, then render a reviewed talking-avatar clip or a small avatar-video product with Pruna `p-video-avatar`. Non-realtime; includes quality and safety checks. |
+
+### `lemonslice/` — live avatars
+
+| Skill | What it does |
+| --- | --- |
+| `gradium-live-avatar-agent` | Scaffold a realtime voice agent from an image, a voice description, and a role. Gradium handles voice design, STT, and TTS; LiveKit orchestrates the call; LemonSlice animates the face. Includes security and privacy requirements for hosted deployments. |
 
 ## Requirements
 
-- A Gradium API key in the `GRADIUM_API_KEY` environment variable
-  (the `gradium-setup-api-key` skill walks through setup and validation).
-- `gradium-pruna-video` additionally needs a `PRUNA_API_KEY`.
-- `gradium-live-avatar-agent` additionally needs a `LEMONSLICE_API_KEY`
-  and LiveKit credentials. It uses LiveKit Inference for the default LLM
-  when credits are available, or a user-provided LLM endpoint otherwise.
-- Bundled scripts use Python 3.10+ with `requests` (plus `websockets`
-  for streaming); `ffmpeg` is recommended for audio conversion.
+| Folder | Environment variables | Also needs |
+| --- | --- | --- |
+| `gradium/` | `GRADIUM_API_KEY` | Python 3.10+, `requests`, `websockets`; `ffmpeg` recommended |
+| `pruna/` | `GRADIUM_API_KEY`, `PRUNA_API_KEY` | `ffmpeg`/`ffprobe` for grading renders |
+| `lemonslice/` | `GRADIUM_API_KEY`, `LEMONSLICE_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | A LiveKit project; an LLM via LiveKit Inference or an OpenAI-compatible endpoint |
 
-## Install for Claude Code
+Pruna renders and LemonSlice sessions consume paid credits on those platforms.
+Keep every key server-side. The `gradium-setup-api-key` skill covers safe
+handling.
 
-Copy any skill folder into your Claude skills directory:
+## Install
+
+Copy a skill folder into your agent's skills directory. The folder name is the
+skill name.
 
 ```bash
+# Claude Code
 mkdir -p ~/.claude/skills
-cp -R gradium-text-to-speech ~/.claude/skills/
+cp -R gradium/gradium-text-to-speech ~/.claude/skills/
+
+# Codex
+mkdir -p ~/.codex/skills
+cp -R gradium/gradium-text-to-speech ~/.codex/skills/
 ```
 
-Then prompt Claude Code with requests such as:
+Then ask for what you want in plain language:
 
 ```text
 Generate a voiceover for this script with a British male voice, slightly slower.
+Transcribe call.wav and make sure it spells "Gradium" correctly.
+Dub intro.mp4 into French using the speaker's own cloned voice.
 ```
 
-## Install for Codex
+The `agents/openai.yaml` files are Codex UI metadata. Other agents can ignore
+them.
 
-Copy the skill folder into your Codex skills directory:
-
-```bash
-mkdir -p ~/.codex/skills
-cp -R gradium-text-to-speech ~/.codex/skills/
-```
-
-Then prompt Codex with requests such as:
-
-```text
-Use $gradium-text-to-speech to narrate docs/intro.md into intro.wav.
-```
-
-## Quick start without an agent
-
-The bundled scripts run standalone:
+## Run the scripts without an agent
 
 ```bash
 export GRADIUM_API_KEY=...
-python gradium-text-to-speech/scripts/tts.py "Hello, world!" --out hello.wav
-python gradium-speech-to-text/scripts/transcribe.py hello.wav --language en
-python gradium-speech-translation/scripts/s2s.py hello.wav --to fr \
+python gradium/gradium-text-to-speech/scripts/tts.py "Hello, world!" --out hello.wav
+python gradium/gradium-speech-to-text/scripts/transcribe.py hello.wav --language en
+python gradium/gradium-speech-translation/scripts/s2s.py hello.wav --to fr \
     --voice YhIHaAfQ0cQPDV9R --out bonjour.wav
 ```
 
-`examples/generate.sh` regenerates the full demo set (speech styles,
-French dub, re-voicing, subtitles, optional talking video) and doubles
-as an end-to-end smoke test of the skills.
+`examples/generate.sh` runs every audio script against the live API and doubles
+as a smoke test. See [examples/README.md](examples/README.md).
 
-## Platform capabilities at a glance
+## Contributing
 
-- **Languages:** English, French, German, Spanish, Portuguese
-- **TTS:** 48 kHz WAV/PCM/Opus output, telephony codecs, word-level
-  timestamps, WebSocket streaming, `<flush>` / `<break>` tags,
-  pronunciation dictionaries
-- **STT:** batch + realtime, semantic VAD turn-taking signals, keyword
-  boosting (up to 500 terms), adaptive latency control
-- **S2S:** live translation between the five languages with any
-  target-language voice, including clones
-- **Voices:** 80+ flagship voices plus cloning from ~10 s of audio
-- **Auth:** `x-api-key` header server-side; short-lived tokens for
-  browser/mobile WebSockets
+Run the validator before opening a pull request. It checks skill frontmatter,
+local links, Python syntax, file sizes, and that no credentials, environment
+files, or temporary tunnel URLs are committed. CI runs the same check.
 
-## Notes
+```bash
+python scripts/validate_repo.py
+```
 
-- Keep one canonical skill folder in this repo.
-- Do not create separate Codex and Claude copies unless a tool requires
-  provider-specific metadata.
-- `migrate-to-gradium/agents/openai.yaml` is Codex UI metadata. Other
-  agents can ignore it and read `SKILL.md` plus the referenced files.
-- Run `python scripts/validate_repo.py` before opening a pull request. CI checks
-  skill metadata, local links, Python syntax, oversized files, environment
-  files, obvious credentials, and temporary tunnel URLs.
-- Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+New skills go under the folder of the tool they primarily drive. Keep one
+canonical copy of each skill; do not add per-agent duplicates.
 
-## Support
+## Security
 
-- Docs: [docs.gradium.ai](https://docs.gradium.ai) (agent-friendly:
-  every page is fetchable as markdown, index at
-  [docs.gradium.ai/llms.txt](https://docs.gradium.ai/llms.txt))
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+Never commit a real `.env` or API key. Clone or imitate a voice only with the
+speaker's consent.
+
+## Support and license
+
+- Docs: [docs.gradium.ai](https://docs.gradium.ai), with an agent-friendly index
+  at [docs.gradium.ai/llms.txt](https://docs.gradium.ai/llms.txt)
 - Contact: support@gradium.ai
+- License: [MIT](LICENSE)
 
-## License
-
-[MIT](LICENSE)
+Pruna AI, LemonSlice, LiveKit, ElevenLabs, Cartesia, and Deepgram are
+trademarks of their respective owners. This repository is maintained by Gradium
+and is not affiliated with or endorsed by those companies.

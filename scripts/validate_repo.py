@@ -120,9 +120,15 @@ def main() -> int:
     errors: list[str] = []
     files = _tracked_files()
 
-    skill_files = sorted(ROOT.glob("*/SKILL.md"))
+    # Skills live one level below a tool folder: <tool>/<skill>/SKILL.md
+    skill_files = sorted(ROOT.glob("*/*/SKILL.md"))
     if not skill_files:
-        errors.append("no top-level skill packages found")
+        errors.append("no skill packages found (expected <tool>/<skill>/SKILL.md)")
+    for stray in sorted(ROOT.glob("*/SKILL.md")):
+        errors.append(
+            f"{stray.relative_to(ROOT)}: skills must live inside a tool folder "
+            "(gradium/, pruna/, lemonslice/, ...)"
+        )
     for skill_file in skill_files:
         _frontmatter(skill_file, errors)
 

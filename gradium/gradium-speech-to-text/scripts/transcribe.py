@@ -69,13 +69,17 @@ def main() -> int:
         words = [v for t in args.keywords for v in expand(t)]
         cfg["keywords"] = {"words": words, "boost": args.boost}
 
+    with open(args.audio, "rb") as f:
+        audio = f.read()
+
     words = []  # (text, start_s, stop_s|None)
     with requests.post(
         "https://api.gradium.ai/api/post/speech/asr",
         params={"json_config": json.dumps(cfg)} if cfg else None,
-        data=open(args.audio, "rb").read(),
+        data=audio,
         headers={"x-api-key": key, "Content-Type": CT[ext]},
         stream=True,
+        timeout=300,
     ) as r:
         if r.status_code != 200:
             print(f"HTTP {r.status_code}: {r.text[:500]}", file=sys.stderr)

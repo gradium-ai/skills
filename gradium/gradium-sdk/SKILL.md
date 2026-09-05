@@ -20,8 +20,8 @@ client = gradium.client.GradiumClient()          # or api_key="..."
 
 The client is **async-first**: every speech method is `await`-able. In
 scripts, wrap calls in `asyncio.run(...)`. Default `base_url` is
-`https://api.gradium.ai/api/` — override only for self-hosted/Baseten
-deployments. If old code sets an EU URL, remove it (single global host
+`https://api.gradium.ai/api/` — override only for self-hosted or
+private deployments. If old code sets an EU URL, remove it (single global host
 now).
 
 ## Three call shapes per modality

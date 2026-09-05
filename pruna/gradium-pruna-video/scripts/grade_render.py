@@ -15,6 +15,7 @@ Usage:
 Requires ffmpeg/ffprobe on PATH.
 """
 import json
+import os
 import subprocess
 import sys
 
@@ -31,11 +32,14 @@ def frames(video, times, vf, prefix):
     subprocess.run(["ffmpeg", "-v", "quiet", "-y"] + sum((["-i", f] for f in files), [])
                    + ["-filter_complex", "".join(f"[{i}]" for i in range(n)) + f"hstack={n}", out],
                    check=True)
-    subprocess.run(["rm"] + files)
+    for f in files:
+        os.remove(f)
     return out
 
 
 def main():
+    if len(sys.argv) < 3:
+        sys.exit(__doc__)
     video, prefix = sys.argv[1], sys.argv[2]
     whisper_json = sys.argv[3] if len(sys.argv) > 3 else None
     dur = float(subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
@@ -45,7 +49,8 @@ def main():
                    "scale=180:-1", f"{prefix}_sweep")
 
     if whisper_json:
-        d = json.load(open(whisper_json))
+        with open(whisper_json) as fh:
+            d = json.load(fh)
         words = [w for s in d["segments"] for w in s.get("words", [])]
         picks = words[2::max(1, len(words) // 6)][:6]
         times = [(w["start"] + w["end"]) / 2 for w in picks]

@@ -13,17 +13,52 @@ import argparse
 import os
 import sys
 import time
+from urllib.parse import urlparse
 
 import requests
 
 GRADIUM = "https://api.gradium.ai/api"
 PRUNA = "https://api.pruna.ai/v1"
+TIMEOUT = 120  # seconds per HTTP call; renders are polled, not awaited
+
+
+def is_pruna_host(url: str) -> bool:
+    u = urlparse(url)
+    host = u.hostname or ""
+    return u.scheme == "https" and (host == "api.pruna.ai" or host.endswith(".pruna.ai"))
+
+
+def download(url: str, key: str, path: str) -> int:
+    """Fetch a render. The API key is only sent to Pruna hosts, and redirects
+    are followed manually so the key never travels to a third-party host."""
+    for _ in range(5):
+        if not urlparse(url).scheme == "https":
+            sys.exit(f"refusing non-HTTPS download URL: {url}")
+        headers = {"apikey": key} if is_pruna_host(url) else {}
+        r = requests.get(url, headers=headers, allow_redirects=False,
+                         timeout=TIMEOUT, stream=True)
+        if r.is_redirect or r.is_permanent_redirect:
+            url = r.headers.get("Location", "")
+            r.close()
+            continue
+        if r.status_code != 200:
+            sys.exit(f"download failed {r.status_code}: {r.text[:300]}")
+        size = 0
+        with open(path, "wb") as f:
+            for chunk in r.iter_content(1 << 16):
+                f.write(chunk)
+                size += len(chunk)
+        if size == 0:
+            sys.exit("download returned an empty file")
+        return size
+    sys.exit("too many redirects while downloading the render")
 
 
 def gradium_tts(text: str, voice: str, key: str, path: str) -> str:
     r = requests.post(f"{GRADIUM}/post/speech/tts", headers={"x-api-key": key},
                       json={"text": text, "voice_id": voice,
-                            "output_format": "wav", "only_audio": True})
+                            "output_format": "wav", "only_audio": True},
+                      timeout=TIMEOUT)
     if r.status_code != 200:
         sys.exit(f"Gradium TTS failed {r.status_code}: {r.text[:300]}")
     with open(path, "wb") as f:
@@ -35,7 +70,8 @@ def gradium_tts(text: str, voice: str, key: str, path: str) -> str:
 def pruna_upload(path: str, key: str) -> str:
     with open(path, "rb") as f:
         r = requests.post(f"{PRUNA}/files", headers={"apikey": key},
-                          files={"content": (os.path.basename(path), f)})
+                          files={"content": (os.path.basename(path), f)},
+                          timeout=TIMEOUT)
     if r.status_code >= 300:
         sys.exit(f"Pruna upload failed {r.status_code}: {r.text[:300]}")
     url = r.json()["urls"]["get"]
@@ -67,8 +103,6 @@ def main() -> int:
 
     audio_path = args.audio or gradium_tts(args.text, args.gradium_voice, gkey,
                                            os.path.splitext(args.out)[0] + "_speech.wav")
-    if not args.audio:
-        pass  # already logged
     image_url = pruna_upload(args.image, pkey)
     audio_url = pruna_upload(audio_path, pkey)
 
@@ -86,7 +120,8 @@ def main() -> int:
 
     r = requests.post(f"{PRUNA}/predictions", json={"input": inp},
                       headers={"apikey": pkey, "Model": model,
-                               "Content-Type": "application/json"})
+                               "Content-Type": "application/json"},
+                      timeout=TIMEOUT)
     if r.status_code >= 300:
         sys.exit(f"Pruna prediction failed {r.status_code}: {r.text[:300]}")
     pred = r.json()
@@ -94,7 +129,7 @@ def main() -> int:
 
     for _ in range(240):
         resp = requests.get(f"{PRUNA}/predictions/status/{pred['id']}",
-                            headers={"apikey": pkey})
+                            headers={"apikey": pkey}, timeout=TIMEOUT)
         if resp.status_code >= 500:   # transient server error: keep polling
             time.sleep(5)
             continue
@@ -105,18 +140,8 @@ def main() -> int:
         print(f"      {status}", end="\r")
         if status == "succeeded":
             print()
-            # generation_url comes from the API response: only attach the API
-            # key if it points at Pruna, and don't follow redirects with the
-            # header attached (custom headers survive cross-host redirects).
-            from urllib.parse import urlparse
-            url = s["generation_url"]
-            host = urlparse(url).hostname or ""
-            trusted = host == "api.pruna.ai" or host.endswith(".pruna.ai")
-            dl = requests.get(url, headers={"apikey": pkey} if trusted else {},
-                              allow_redirects=not trusted)
-            with open(args.out, "wb") as f:
-                f.write(dl.content)
-            print(f"[4/4] wrote {args.out} ({len(dl.content)} bytes)")
+            size = download(s["generation_url"], pkey, args.out)
+            print(f"[4/4] wrote {args.out} ({size} bytes)")
             return 0
         if status == "failed":
             sys.exit(f"\nrender failed: {s.get('error') or s}")
