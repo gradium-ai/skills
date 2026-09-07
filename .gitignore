@@ -4,3 +4,15 @@
 __pycache__/
 *.pyc
 .DS_Store
+.venv/
+outputs/
+*.wav
+*.pcm
+*.ogg
+*.mp4
+!examples/pruna-designed-avatar/*.mp4
+portrait.*
+voice-audition.*
+avatar.local.*
+*_sweep.png
+*_mouth.png

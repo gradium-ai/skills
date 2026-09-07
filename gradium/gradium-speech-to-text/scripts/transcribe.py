@@ -79,10 +79,11 @@ def main() -> int:
         data=audio,
         headers={"x-api-key": key, "Content-Type": CT[ext]},
         stream=True,
+        allow_redirects=False,
         timeout=300,
     ) as r:
         if r.status_code != 200:
-            print(f"HTTP {r.status_code}: {r.text[:500]}", file=sys.stderr)
+            print(f"STT failed: HTTP {r.status_code}", file=sys.stderr)
             return 1
         for line in r.iter_lines(decode_unicode=True):
             if not line:
@@ -93,7 +94,7 @@ def main() -> int:
             elif m["type"] == "end_text" and words:
                 words[-1][2] = m.get("stop_s")
             elif m["type"] == "error":
-                print(f"stream error: {m}", file=sys.stderr)
+                print("STT provider returned an error", file=sys.stderr)
                 return 1
 
     # start_s/stop_s run on the decoder clock, which leads the audio by

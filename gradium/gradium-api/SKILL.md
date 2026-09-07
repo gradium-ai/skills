@@ -43,7 +43,7 @@ stale host fails WebSocket auth with a misleading
 ## TTS: one-shot POST
 
 ```bash
-curl -L -X POST https://api.gradium.ai/api/post/speech/tts \
+curl -fS -X POST https://api.gradium.ai/api/post/speech/tts \
   -H "x-api-key: $GRADIUM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello from Gradium.", "voice_id": "YTpq7expH9539ERJ",
@@ -76,7 +76,7 @@ inline tags are covered in the gradium-text-to-speech skill.
 Send raw audio bytes as the body; the response streams NDJSON.
 
 ```bash
-curl -L -X POST 'https://api.gradium.ai/api/post/speech/asr?json_config=%7B%22language%22%3A%22en%22%7D' \
+curl -fS -X POST 'https://api.gradium.ai/api/post/speech/asr?json_config=%7B%22language%22%3A%22en%22%7D' \
   -H "x-api-key: $GRADIUM_API_KEY" \
   -H "Content-Type: audio/wav" \
   --data-binary @input.wav
@@ -187,7 +187,8 @@ CRUD endpoints (REST, `x-api-key`):
    `original`/`rewrite`.
 6. Passing STT options in the POST body — the body is raw audio; options
    go in the `json_config` query parameter.
-7. Forgetting `-L` on curl (the API may redirect).
+7. Following redirects with custom API-key headers. Use the canonical URL;
+   reject redirects unless the destination is verified as the same HTTPS origin.
 8. Expecting `GET /voices/` to list flagship voices — it only returns
    your custom clones; flagship IDs live in the docs voice library.
 9. Treating the 300 s session cap as an error — it's a design limit;

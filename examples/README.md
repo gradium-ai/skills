@@ -1,8 +1,10 @@
 # Examples
 
-No pre-baked media here — the examples are generated fresh from the
-live API, which also makes this a one-command smoke test of the whole
-skill set:
+The audio examples are generated fresh from the live API, which also
+makes this a one-command smoke test of the audio skills. Finished video
+examples live in [pruna-designed-avatar/](pruna-designed-avatar/).
+
+Generate the audio set:
 
 ```bash
 export GRADIUM_API_KEY=...

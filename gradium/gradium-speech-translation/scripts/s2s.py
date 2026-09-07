@@ -12,14 +12,19 @@ Usage:
 import argparse
 import asyncio
 import base64
+import io
 import json
 import os
 import subprocess
 import sys
+import tempfile
+import wave
 
 import websockets
+from websockets.exceptions import WebSocketException
 
 CHUNK = 24000 * 2 // 12  # ~80 ms of 24 kHz 16-bit mono
+MAX_AUDIO_BYTES = 64 * 1024 * 1024
 
 
 async def run(args: argparse.Namespace, key: str) -> int:
@@ -27,8 +32,8 @@ async def run(args: argparse.Namespace, key: str) -> int:
     # that stops dead on the final word gets its last sentence truncated.
     pcm = subprocess.run(
         ["ffmpeg", "-v", "quiet", "-i", args.audio, "-af", "apad=pad_dur=2",
-         "-f", "s16le", "-ar", "24000", "-ac", "1", "-"],
-        capture_output=True).stdout
+         "-t", "296", "-f", "s16le", "-ar", "24000", "-ac", "1", "-"],
+        capture_output=True, check=True, timeout=60).stdout
     if not pcm:
         print("ffmpeg produced no audio — check the input file", file=sys.stderr)
         return 1
@@ -48,9 +53,9 @@ async def run(args: argparse.Namespace, key: str) -> int:
             "output_format": "wav",
             "json_config": {"target_language": args.to},
         }))
-        ready = json.loads(await ws.recv())
+        ready = json.loads(await asyncio.wait_for(ws.recv(), timeout=30))
         if ready.get("type") != "ready":
-            print(f"setup rejected: {ready}", file=sys.stderr)
+            print("setup rejected", file=sys.stderr)
             return 1
 
         async def producer():
@@ -64,24 +69,39 @@ async def run(args: argparse.Namespace, key: str) -> int:
                 await asyncio.sleep(0.06)
             await ws.send(json.dumps({"type": "end_of_stream"}))
 
-        chunks, text = [], []
+        chunks, text = bytearray(), []
         async def consumer():
             async for raw in ws:
                 m = json.loads(raw)
                 if m["type"] == "audio":
-                    chunks.append(base64.b64decode(m["audio"]))
+                    chunks.extend(base64.b64decode(m["audio"], validate=True))
+                    if len(chunks) > MAX_AUDIO_BYTES:
+                        raise ValueError("translated audio exceeds 64 MiB")
                 elif m["type"] == "text":
                     text.append(m["text"].strip())
                 elif m["type"] == "end_of_stream":
                     return
                 elif m["type"] == "error":
-                    print(f"stream error: {m}", file=sys.stderr)
-                    return
+                    raise ValueError("translation provider returned an error")
+            raise ValueError("translation closed before end_of_stream")
 
-        await asyncio.gather(producer(), consumer())
-        with open(args.out, "wb") as f:
-            f.write(b"".join(chunks))
-        print(f"wrote {args.out} ({sum(len(c) for c in chunks)} bytes)")
+        tasks = [asyncio.create_task(producer()), asyncio.create_task(consumer())]
+        try:
+            await asyncio.wait_for(asyncio.gather(*tasks), timeout=330)
+        finally:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+        with wave.open(io.BytesIO(chunks), "rb") as audio:
+            if not audio.readframes(1):
+                raise ValueError("translation returned empty audio")
+        # Replace the requested file only after a complete, valid response.
+        with tempfile.TemporaryDirectory(dir=os.path.dirname(os.path.abspath(args.out))) as tmp:
+            path = os.path.join(tmp, "translated.wav")
+            with open(path, "wb") as f:
+                f.write(chunks)
+            os.replace(path, args.out)
+        print(f"wrote {args.out} ({len(chunks)} bytes)")
         print(f"translated text: {' '.join(text)}")
     return 0
 
@@ -98,7 +118,12 @@ def main() -> int:
     if not key:
         print("GRADIUM_API_KEY is not set", file=sys.stderr)
         return 1
-    return asyncio.run(run(args, key))
+    try:
+        return asyncio.run(run(args, key))
+    except (OSError, ValueError, EOFError, wave.Error, asyncio.TimeoutError,
+            subprocess.SubprocessError, WebSocketException) as exc:
+        print(f"translation failed ({type(exc).__name__}); output preserved", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

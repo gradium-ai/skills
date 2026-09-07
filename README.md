@@ -51,12 +51,17 @@ field names, and behavior notes were checked against the live APIs.
 | Folder | Environment variables | Also needs |
 | --- | --- | --- |
 | `gradium/` | `GRADIUM_API_KEY` | Python 3.10+, `requests`, `websockets`; `ffmpeg` recommended |
-| `pruna/` | `GRADIUM_API_KEY`, `PRUNA_API_KEY` | `ffmpeg`/`ffprobe` for grading renders |
+| `pruna/` | `GRADIUM_API_KEY`, `PRUNA_API_KEY` | `ffprobe` for media validation; `ffmpeg` for grading renders |
 | `lemonslice/` | `GRADIUM_API_KEY`, `LEMONSLICE_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | A LiveKit project; an LLM via LiveKit Inference or an OpenAI-compatible endpoint |
 
 Pruna renders and LemonSlice sessions consume paid credits on those platforms.
 Keep every key server-side. The `gradium-setup-api-key` skill covers safe
 handling.
+
+For the tested standalone-script environment, install `pip install -r requirements.txt`
+in a virtual environment. Each skill remains independently copyable; its script
+dependencies are documented locally. Keep private media in an ignored `outputs/`
+directory and use `--out` to select the destination.
 
 ## Install
 
@@ -84,6 +89,38 @@ Dub intro.mp4 into French using the speaker's own cloned voice.
 The `agents/openai.yaml` files are Codex UI metadata. Other agents can ignore
 them.
 
+## Examples
+
+One prompt per skill and what comes back.
+
+| Skill | Try asking | You get |
+| --- | --- | --- |
+| `gradium-text-to-speech` | "Narrate docs/intro.md with a warm Irish voice, slightly slower, as an Opus file." | `intro.ogg` plus word timestamps if you want captions |
+| `gradium-speech-to-text` | "Transcribe call.wav and make sure it spells Gradium and Mbappé right." | A transcript with those names boosted, optionally an SRT |
+| `gradium-speech-translation` | "Dub intro.mp4 into French in the speaker's own voice." | A French audio track in a cloned voice, plus the translated script |
+| `gradium-voice-cloning` | "Clone my voice from sample.wav and use it for the narration." | A permanent `voice_id` after a consent check, wired into TTS |
+| `gradium-sdk` | "Write a FastAPI endpoint that streams Gradium TTS for LLM output." | Async SDK code using the realtime call shape |
+| `gradium-api` | "Call Gradium TTS from a Cloudflare Worker in TypeScript, no SDK." | Raw `fetch` and WebSocket code with the exact message grammar |
+| `gradium-docs` | "Which Gradium page covers Twilio audio formats?" | The one docs URL, fetched as markdown |
+| `gradium-setup-api-key` | "My Gradium calls return 401." | A key check, the fix, and a credits readout as proof |
+| `migrate-to-gradium` | "Switch our ElevenLabs TTS adapter to Gradium." | The smallest provider-layer diff and a smoke test |
+| `gradium-pruna-video` | "Make portrait.png say this script in my cloned voice." | A lip-synced MP4 and two frame montages for grading |
+| `gradium-pruna-designed-avatar` | "Design a voice to fit this portrait and render the script." | An auditioned voice, one reviewed render (see below) |
+| `gradium-live-avatar-agent` | "Build a live avatar language tutor from this image." | A LiveKit worker, token server, and avatar-only web client |
+
+### Designed-avatar renders
+
+Three clips made with `gradium-pruna-designed-avatar`. Click a poster to play.
+Details in [examples/pruna-designed-avatar/](examples/pruna-designed-avatar/).
+
+| Maya, support agent (25 s) | Arthur, insurance guide (35 s) | Fictional creator demo (24 s) |
+| --- | --- | --- |
+| [![Maya, a support agent avatar](examples/pruna-designed-avatar/support-agent-maya.jpg)](examples/pruna-designed-avatar/support-agent-maya.mp4) | [![Arthur, an insurance guide avatar](examples/pruna-designed-avatar/insurance-guide-arthur.jpg)](examples/pruna-designed-avatar/insurance-guide-arthur.mp4) | [![A creator avatar filming a mirror selfie](examples/pruna-designed-avatar/supplement-testimonial.jpg)](examples/pruna-designed-avatar/supplement-testimonial.mp4) |
+
+Every portrait and voice is AI-generated; no real person is depicted. These are
+fictional scripted performances, not real customer experiences or product claims.
+The creator clip and poster carry that disclosure within the assets themselves.
+
 ## Run the scripts without an agent
 
 ```bash
@@ -99,13 +136,19 @@ as a smoke test. See [examples/README.md](examples/README.md).
 
 ## Contributing
 
-Run the validator before opening a pull request. It checks skill frontmatter,
-local links, Python syntax, file sizes, and that no credentials, environment
-files, or temporary tunnel URLs are committed. CI runs the same check.
+Run the validator and offline regression tests before opening a pull request.
+The validator checks skill packaging and common secret patterns; it is not a
+complete secret scanner. CI also runs Gitleaks on history and the working tree,
+and pip-audit on the resolved standalone-script dependencies.
 
 ```bash
 python scripts/validate_repo.py
+python -m unittest discover -s tests
 ```
+
+Refresh dependencies with `uv pip compile requirements.in --python-version 3.10 -o requirements.txt`,
+then run the tests and `pip-audit -r requirements.txt`. LiveKit and other packages
+used by generated applications need their own resolved lockfiles and audits.
 
 New skills go under the folder of the tool they primarily drive. Keep one
 canonical copy of each skill; do not add per-agent duplicates.

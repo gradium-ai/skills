@@ -1,6 +1,6 @@
 ---
 name: gradium-speech-to-text
-description: Transcribe audio to text with the Gradium STT API. Use when converting audio or video recordings to text, transcribing meetings/podcasts/voicemail, building live captioning or dictation, streaming microphone audio for a voice agent, detecting when a speaker has finished talking (turn-taking / endpointing / VAD), or making a transcriber recognize product names, brands, and jargon correctly — even if the user just says "get the text out of this recording" or "my transcriber keeps misspelling our product name". Covers batch REST transcription, realtime WebSocket streaming with semantic VAD, keyword boosting, timestamps, and telephony audio formats. Languages: English, French, German, Spanish, Portuguese.
+description: "Transcribe audio to text with the Gradium STT API. Use when converting audio or video recordings to text, transcribing meetings/podcasts/voicemail, building live captioning or dictation, streaming microphone audio for a voice agent, detecting when a speaker has finished talking (turn-taking / endpointing / VAD), or making a transcriber recognize product names, brands, and jargon correctly — even if the user just says \"get the text out of this recording\" or \"my transcriber keeps misspelling our product name\". Covers batch REST transcription, realtime WebSocket streaming with semantic VAD, keyword boosting, timestamps, and telephony audio formats. Languages: English, French, German, Spanish, Portuguese."
 license: MIT
 compatibility: Requires internet access and a Gradium API key (GRADIUM_API_KEY). ffmpeg recommended for format conversion.
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY"]}, "primaryEnv": "GRADIUM_API_KEY"}}
@@ -33,7 +33,7 @@ The bundled script (tested) handles config encoding, transcript
 assembly, and optional keyword boosting. Raw form:
 
 ```bash
-curl -L -X POST 'https://api.gradium.ai/api/post/speech/asr?json_config=%7B%22language%22%3A%22en%22%7D' \
+curl -fS -X POST 'https://api.gradium.ai/api/post/speech/asr?json_config=%7B%22language%22%3A%22en%22%7D' \
   -H "x-api-key: $GRADIUM_API_KEY" \
   -H "Content-Type: audio/wav" \
   --data-binary @recording.wav

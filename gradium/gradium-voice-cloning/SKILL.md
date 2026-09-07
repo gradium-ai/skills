@@ -28,7 +28,7 @@ proceeding.
 ## Create a clone
 
 ```bash
-curl -L -X POST https://api.gradium.ai/api/voices/ \
+curl -fS -X POST https://api.gradium.ai/api/voices/ \
   -H "x-api-key: $GRADIUM_API_KEY" \
   -F "audio_file=@sample.wav" \
   -F "name=Support narrator" \
@@ -63,13 +63,13 @@ useful band; 4.0 max before artifacts).
 
 ```bash
 # List your clones            (flagship voices are NOT in this list)
-curl -L https://api.gradium.ai/api/voices/ -H "x-api-key: $GRADIUM_API_KEY"
+curl -fS https://api.gradium.ai/api/voices/ -H "x-api-key: $GRADIUM_API_KEY"
 # Inspect / rename / delete
-curl -L https://api.gradium.ai/api/voices/{uid} -H "x-api-key: $GRADIUM_API_KEY"
-curl -L -X PUT https://api.gradium.ai/api/voices/{uid} \
+curl -fS https://api.gradium.ai/api/voices/{uid} -H "x-api-key: $GRADIUM_API_KEY"
+curl -fS -X PUT https://api.gradium.ai/api/voices/{uid} \
   -H "x-api-key: $GRADIUM_API_KEY" -H "Content-Type: application/json" \
   -d '{"name": "New name"}'
-curl -L -X DELETE https://api.gradium.ai/api/voices/{uid} \
+curl -fS -X DELETE https://api.gradium.ai/api/voices/{uid} \
   -H "x-api-key: $GRADIUM_API_KEY"        # 204 on success, irreversible
 ```
 

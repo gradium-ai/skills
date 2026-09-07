@@ -14,7 +14,7 @@ environment variable, then a `.env` file in the project root. If found,
 validate it before doing anything else:
 
 ```bash
-curl -sL https://api.gradium.ai/api/usages/credits -H "x-api-key: $GRADIUM_API_KEY"
+curl -fsS https://api.gradium.ai/api/usages/credits -H "x-api-key: $GRADIUM_API_KEY"
 ```
 
 - `{"remaining_credits": ...}` → key works; report the balance and stop.
@@ -54,7 +54,7 @@ short-lived single-use token on your server and hand that to the
 client:
 
 ```bash
-curl -L https://api.gradium.ai/api/api-keys/token -H "x-api-key: $GRADIUM_API_KEY"
+curl -fS https://api.gradium.ai/api/api-keys/token -H "x-api-key: $GRADIUM_API_KEY"
 # -> {"token": "...", "expires_at": "..."}
 ```
 

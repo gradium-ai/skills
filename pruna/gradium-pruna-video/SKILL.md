@@ -43,6 +43,9 @@ python scripts/voice_video.py "..." --image scene.png --mode scene \
 
 The script does the whole pipeline: Gradium TTS → Pruna upload →
 prediction → poll → download → duration check.
+Requires `ffprobe` on PATH. Downloads are limited to 512 MiB and five minutes;
+existing outputs are replaced only after media validation. Avatar duration must
+match the source audio within 5% or one second, whichever is larger.
 
 ## The pipeline, step by step
 
@@ -65,7 +68,8 @@ prediction → poll → download → duration check.
      -H "Model: p-video-avatar" \
      -d '{"input": {"image": "<image-url>", "audio": "<audio-url>",
           "resolution": "720p",
-          "video_prompt": "The person speaks with subtle gestures."}}'
+          "video_prompt": "The person speaks with subtle gestures.",
+          "disable_safety_filter": false, "disable_prompt_upsampling": true}}'
    ```
    - `audio` takes priority over `voice_script`/built-in TTS — when you
      pass audio, Pruna's own voices are bypassed entirely.
@@ -79,8 +83,15 @@ prediction → poll → download → duration check.
    `failed`. Renders typically take tens of seconds; budget minutes for
    1080p or long clips.
 
-5. **Download** the `generation_url` (send the `apikey` header) and
-   save as `.mp4`.
+5. **Download** the `generation_url` and validate it before saving as `.mp4`.
+   Send `apikey` only to the exact `https://api.pruna.ai` origin (port 443).
+   Follow relative redirects with URL resolution, validate every destination,
+   and omit the key on external delivery URLs. Reject HTTP and embedded credentials.
+
+Keep the avatar safety filter enabled and prompt upsampling disabled, as in the
+request above. Enabling upsampling can add another provider to the image/prompt
+data flow; explain that change before sending user assets. Authenticated API
+calls should reject redirects rather than forwarding custom key headers.
 
 ## Example prompts (battle-tested)
 
