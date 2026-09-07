@@ -180,8 +180,7 @@ class Scripts(unittest.TestCase):
              patch("sys.argv", ["video", "--audio", str(self.media), "--image", str(self.media)]), \
              patch.object(video.requests, "post", side_effect=posts) as post, \
              patch.object(video.requests, "get", side_effect=poll), \
-             patch.object(video.time, "monotonic", side_effect=lambda: clock[0]), \
-             patch.object(video.time, "sleep", side_effect=elapse), \
+             patch.object(video, "time", Mock(monotonic=lambda: clock[0], sleep=elapse)), \
              self.assertRaisesRegex(SystemExit, "20 minutes"):
             video.main()
         self.assertEqual(clock[0], 1200)
