@@ -18,22 +18,29 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 
 def frames(video, times, vf, prefix):
-    files = []
-    for i, t in enumerate(times):
-        f = f"{prefix}_{i}.png"
-        subprocess.run(["ffmpeg", "-v", "quiet", "-y", "-ss", f"{t:.2f}", "-i", video,
-                        "-frames:v", "1", "-vf", vf, f], check=True)
-        files.append(f)
+    if not times:
+        raise ValueError("no frame timestamps to grade")
     out = f"{prefix}.png"
-    n = len(files)
-    subprocess.run(["ffmpeg", "-v", "quiet", "-y"] + sum((["-i", f] for f in files), [])
-                   + ["-filter_complex", "".join(f"[{i}]" for i in range(n)) + f"hstack={n}", out],
-                   check=True)
-    for f in files:
-        os.remove(f)
+    with tempfile.TemporaryDirectory(dir=os.path.dirname(os.path.abspath(out))) as tmp:
+        files = []
+        for i, t in enumerate(times):
+            f = os.path.join(tmp, f"{i}.png")
+            subprocess.run(["ffmpeg", "-v", "error", "-nostdin", "-ss", f"{t:.2f}",
+                            "-i", video, "-frames:v", "1", "-vf", vf, f],
+                           check=True, timeout=60)
+            files.append(f)
+        n = len(files)
+        montage = os.path.join(tmp, "montage.png")
+        subprocess.run(["ffmpeg", "-v", "error", "-nostdin"]
+                       + sum((["-i", f] for f in files), [])
+                       + ["-filter_complex", "".join(f"[{i}]" for i in range(n))
+                          + f"hstack={n}", "-frames:v", "1", montage],
+                       check=True, timeout=60)
+        os.replace(montage, out)
     return out
 
 
@@ -43,7 +50,8 @@ def main():
     video, prefix = sys.argv[1], sys.argv[2]
     whisper_json = sys.argv[3] if len(sys.argv) > 3 else None
     dur = float(subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                                "-of", "csv=p=0", video], capture_output=True, text=True).stdout)
+                                "-of", "csv=p=0", video], capture_output=True, text=True,
+                               check=True, timeout=30).stdout)
 
     sweep = frames(video, [dur * (i + 0.5) / 8 for i in range(8)],
                    "scale=180:-1", f"{prefix}_sweep")
@@ -52,10 +60,10 @@ def main():
         with open(whisper_json) as fh:
             d = json.load(fh)
         words = [w for s in d["segments"] for w in s.get("words", [])]
-        picks = words[2::max(1, len(words) // 6)][:6]
+        picks = words[::max(1, len(words) // 6)][:6]
         times = [(w["start"] + w["end"]) / 2 for w in picks]
         label = [w["word"].strip() for w in picks]
-    else:
+    if not whisper_json or not times:
         times = [dur * (i + 0.5) / 6 for i in range(6)]
         label = [f"{t:.1f}s" for t in times]
     mouth = frames(video, times, "scale=180:-1", f"{prefix}_mouth")

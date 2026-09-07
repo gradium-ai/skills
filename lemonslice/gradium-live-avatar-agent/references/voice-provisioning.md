@@ -56,7 +56,7 @@ Use `https://api.gradium.ai/api` with the `x-api-key` header.
    first embedding reports `ready: true`. Use a bounded timeout and a modest
    polling interval.
 
-3. Render a short audition with `POST /speech/tts`:
+3. Render a short audition with `POST /post/speech/tts`:
 
    ```json
    {

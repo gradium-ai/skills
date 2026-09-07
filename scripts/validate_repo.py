@@ -5,20 +5,22 @@ from __future__ import annotations
 
 import ast
 import re
+import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 MAX_FILE_BYTES = 5 * 1024 * 1024
-FRONTMATTER_FIELD = re.compile(r"^([a-zA-Z][\w-]*):\s*(.+)$", re.MULTILINE)
 MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 SECRET_ASSIGNMENT = re.compile(
-    r"(?mi)^[ \t]*(?:export[ \t]+)?"
+    r"(?mi)(?<![\w])(?:export[ \t]+)?[\"']?"
     r"(?:ANTHROPIC_API_KEY|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|"
     r"BASETEN_API_KEY|GITHUB_TOKEN|GRADIUM_API_KEY|HF_TOKEN|"
     r"LEMONSLICE_API_KEY|LIVEKIT_API_KEY|LIVEKIT_API_SECRET|LLM_API_KEY|"
     r"OPENAI_API_KEY|PRUNA_API_KEY)"
-    r"[ \t]*=[ \t]*([^\r\n#]+)"
+    r"[\"']?[ \t]*(?:=|:(?![?+=$-]))[ \t]*(\"[^\"]*\"|'[^']*'|[^\s,#}]+)"
 )
 TOKEN_PATTERNS = (
     re.compile(r"(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9])"),
@@ -28,28 +30,19 @@ TOKEN_PATTERNS = (
         r"[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}(?![A-Za-z0-9_-])"
     ),
 )
-PLACEHOLDER_PARTS = (
-    "...",
-    "example",
-    "paste",
-    "placeholder",
-    "their",
-    "your",
-    "<",
-    "${",
-    "$",
-    "os.environ",
-    "os.getenv",
+PLACEHOLDER = re.compile(
+    r"(?:\.\.\.|(?:your|their|paste|example|placeholder)(?:[_ -].*)?|<[^>]+>|"
+    r"\$[^\s]+|os\.(?:environ|getenv).*)", re.IGNORECASE
 )
 
 
 def _tracked_files() -> list[Path]:
-    ignored_roots = {".git", ".venv", "__pycache__"}
-    return [
-        path
-        for path in ROOT.rglob("*")
-        if path.is_file() and not any(part in ignored_roots for part in path.parts)
-    ]
+    names = subprocess.check_output(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=ROOT,
+    ).decode().split("\0")
+    return [ROOT / name for name in sorted(set(names))
+            if name and ((ROOT / name).is_file() or (ROOT / name).is_symlink())]
 
 
 def _frontmatter(path: Path, errors: list[str]) -> None:
@@ -58,11 +51,18 @@ def _frontmatter(path: Path, errors: list[str]) -> None:
         errors.append(f"{path.relative_to(ROOT)}: missing YAML frontmatter")
         return
     block = text[4:].split("\n---\n", 1)[0]
-    fields = dict(FRONTMATTER_FIELD.findall(block))
+    try:
+        fields = yaml.safe_load(block)
+    except yaml.YAMLError:
+        errors.append(f"{path.relative_to(ROOT)}: invalid YAML frontmatter")
+        return
+    if not isinstance(fields, dict):
+        errors.append(f"{path.relative_to(ROOT)}: frontmatter must be a mapping")
+        return
     for required in ("name", "description"):
-        if not fields.get(required, "").strip():
+        if not isinstance(fields.get(required), str) or not fields[required].strip():
             errors.append(f"{path.relative_to(ROOT)}: missing {required}")
-    if fields.get("name", "").strip() != path.parent.name:
+    if fields.get("name") != path.parent.name:
         errors.append(
             f"{path.relative_to(ROOT)}: name must match directory {path.parent.name!r}"
         )
@@ -85,28 +85,13 @@ def _links(path: Path, errors: list[str]) -> None:
 
 
 def _secret_hygiene(path: Path, errors: list[str]) -> None:
-    text_suffixes = {
-        ".go",
-        ".js",
-        ".json",
-        ".md",
-        ".mjs",
-        ".py",
-        ".rb",
-        ".rs",
-        ".sh",
-        ".toml",
-        ".ts",
-        ".tsx",
-        ".yaml",
-        ".yml",
-    }
-    if path.suffix.lower() not in text_suffixes and path.name not in {"Dockerfile"}:
-        return
-    text = path.read_text(encoding="utf-8", errors="ignore")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return  # Binary assets are inspected separately.
     for match in SECRET_ASSIGNMENT.finditer(text):
         value = match.group(1).strip().strip("\"'").casefold()
-        if value and not any(part in value for part in PLACEHOLDER_PARTS):
+        if value and not PLACEHOLDER.fullmatch(value):
             errors.append(
                 f"{path.relative_to(ROOT)}: possible populated credential assignment"
             )

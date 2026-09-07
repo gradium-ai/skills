@@ -28,7 +28,7 @@ at sentence or paragraph boundaries and synthesize per chunk.
 ## One-shot REST
 
 ```bash
-curl -L -X POST https://api.gradium.ai/api/post/speech/tts \
+curl -fS -X POST https://api.gradium.ai/api/post/speech/tts \
   -H "x-api-key: $GRADIUM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello, world!", "voice_id": "YTpq7expH9539ERJ",
@@ -90,7 +90,7 @@ Two mechanisms, pick by transport:
   (next to `voice_id`, *not* inside `json_config`). Rules use
   `original`/`rewrite` fields:
   ```bash
-  curl -L -X POST https://api.gradium.ai/api/pronunciations/ \
+  curl -fS -X POST https://api.gradium.ai/api/pronunciations/ \
     -H "x-api-key: $GRADIUM_API_KEY" -H "Content-Type: application/json" \
     -d '{"name": "brand-terms", "language": "en",
          "rules": [{"original": "SQL", "rewrite": "sequel"},
@@ -132,7 +132,7 @@ transcript. The STT call is *not* multipart — send the raw bytes as the
 body, and join the word tokens from the NDJSON reply with spaces:
 
 ```bash
-curl -sL -X POST https://api.gradium.ai/api/post/speech/asr \
+curl -fsS -X POST https://api.gradium.ai/api/post/speech/asr \
   -H "x-api-key: $GRADIUM_API_KEY" -H "Content-Type: audio/wav" \
   --data-binary @out.wav | python3 -c "
 import sys, json
