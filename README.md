@@ -46,6 +46,14 @@ field names, and behavior notes were checked against the live APIs.
 | --- | --- |
 | `gradium-live-avatar-agent` | Scaffold a realtime voice agent from an image, a voice description, and a role. Gradium handles voice design, STT, and TTS; LiveKit orchestrates the call; LemonSlice animates the face. Includes security and privacy requirements for hosted deployments. |
 
+### Skills built by partners
+
+These live in other repositories and are maintained by their authors.
+
+| Skill | Built by | What it does |
+| --- | --- | --- |
+| [`design-voice`](https://github.com/pipecat-ai/pipecat-examples/tree/main/gradium-voice-designer) | The [Pipecat](https://pipecat.ai) team | Design a custom Gradium voice from a character image (or a few questions), audition three takes, keep the winner as a permanent `voice_id`, then generate a Pipecat agent (Gradium STT and TTS with OpenAI, Gemini, or Anthropic as the LLM) and a web client from the Pipecat UI registry. In `pipecat-examples/gradium-voice-designer/`. |
+
 ## Requirements
 
 | Folder | Environment variables | Also needs |
@@ -166,6 +174,6 @@ speaker's consent.
 - Contact: support@gradium.ai
 - License: [MIT](LICENSE)
 
-Pruna AI, LemonSlice, LiveKit, ElevenLabs, Cartesia, and Deepgram are
-trademarks of their respective owners. This repository is maintained by Gradium
+Pruna AI, LemonSlice, LiveKit, Pipecat, ElevenLabs, Cartesia, and Deepgram
+are trademarks of their respective owners. This repository is maintained by Gradium
 and is not affiliated with or endorsed by those companies.
