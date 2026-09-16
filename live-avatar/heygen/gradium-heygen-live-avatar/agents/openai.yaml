@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gradium + HeyGen Live Avatar"
+  short_description: "Build a live HeyGen avatar with a Gradium voice"
+  default_prompt: "Use $gradium-heygen-live-avatar to build a live avatar agent: ask which LiveAvatar avatar to use, which Gradium voice and language it should speak, what the agent is for, and what should appear on screen, then set up the orchestrator with a sandbox session first."
