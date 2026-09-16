@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Gradium × LiveAvatar</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header>
+      <span class="mark" aria-hidden="true"></span>
+      <h1>Gradium × LiveAvatar</h1>
+    </header>
+
+    <main id="layout">
+      <section id="stage" data-state="idle" data-avatar="idle" aria-label="avatar">
+        <video id="video" autoplay playsinline></video>
+        <audio id="audio" autoplay></audio>
+
+        <div id="card" class="card" hidden>
+          <div class="card-accent" aria-hidden="true"></div>
+          <div id="card-title" class="card-title"></div>
+          <div id="card-subtitle" class="card-subtitle"></div>
+          <div id="card-body" class="card-body"></div>
+        </div>
+
+        <div id="hero">
+          <h2>Talk to a live avatar</h2>
+          <p>
+            Gradium listens and speaks, an LLM thinks, and a HeyGen LiveAvatar
+            puts a face on the voice. Key terms land on screen as cards while it talks.
+          </p>
+          <button id="start" type="button">Start talking</button>
+          <span class="hint">Uses your microphone</span>
+        </div>
+
+        <div id="loader" aria-hidden="true">
+          <span class="orb"></span>
+          <span id="loader-label">starting session…</span>
+        </div>
+      </section>
+
+      <div id="controls">
+        <div id="status" data-kind="idle">idle</div>
+        <button id="mic" type="button" disabled aria-pressed="false" aria-label="Mute microphone">
+          <svg class="icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4" />
+          </svg>
+          <svg class="icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4" />
+            <line x1="4" y1="3" x2="20" y2="21" />
+          </svg>
+          <span id="mic-label">Mic on</span>
+        </button>
+        <button id="stop" type="button" disabled>End call</button>
+      </div>
+
+      <aside id="transcript-panel" aria-label="transcript">
+        <h2>Transcript</h2>
+        <div id="transcript"></div>
+      </aside>
+    </main>
+
+    <!-- Pinned UMD build; global `LivekitClient`. Bundle it locally for a hosted deployment. -->
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.22.3/dist/livekit-client.umd.min.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

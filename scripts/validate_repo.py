@@ -17,9 +17,10 @@ MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 SECRET_ASSIGNMENT = re.compile(
     r"(?mi)(?<![\w])(?:export[ \t]+)?[\"']?"
     r"(?:ANTHROPIC_API_KEY|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|"
-    r"BASETEN_API_KEY|GITHUB_TOKEN|GRADIUM_API_KEY|HF_TOKEN|"
-    r"LEMONSLICE_API_KEY|LIVEKIT_API_KEY|LIVEKIT_API_SECRET|LLM_API_KEY|"
-    r"OPENAI_API_KEY|PRUNA_API_KEY)"
+    r"ANAM_API_KEY|BASETEN_API_KEY|BEY_API_KEY|BITHUMAN_API_SECRET|DID_API_KEY|"
+    r"GITHUB_TOKEN|GRADIUM_API_KEY|HF_TOKEN|"
+    r"LEMONSLICE_API_KEY|LIVEAVATAR_API_KEY|LIVEKIT_API_KEY|LIVEKIT_API_SECRET|LLM_API_KEY|"
+    r"OPENAI_API_KEY|PRUNA_API_KEY|SIMLI_API_KEY|TAVUS_API_KEY)"
     r"[\"']?[ \t]*(?:=|:(?![?+=$-]))[ \t]*(\"[^\"]*\"|'[^']*'|[^\s,#}]+)"
 )
 TOKEN_PATTERNS = (
@@ -105,14 +106,15 @@ def main() -> int:
     errors: list[str] = []
     files = _tracked_files()
 
-    # Skills live one level below a tool folder: <tool>/<skill>/SKILL.md
-    skill_files = sorted(ROOT.glob("*/*/SKILL.md"))
+    # Skills live below a tool folder (<tool>/<skill>/SKILL.md) or, for a family of
+    # tools, one level deeper (<family>/<tool>/<skill>/SKILL.md, e.g. live-avatar/tavus/).
+    skill_files = sorted([*ROOT.glob("*/*/SKILL.md"), *ROOT.glob("*/*/*/SKILL.md")])
     if not skill_files:
         errors.append("no skill packages found (expected <tool>/<skill>/SKILL.md)")
     for stray in sorted(ROOT.glob("*/SKILL.md")):
         errors.append(
             f"{stray.relative_to(ROOT)}: skills must live inside a tool folder "
-            "(gradium/, pruna/, lemonslice/, ...)"
+            "(gradium/, pruna/, live-avatar/<provider>/, ...)"
         )
     for skill_file in skill_files:
         _frontmatter(skill_file, errors)

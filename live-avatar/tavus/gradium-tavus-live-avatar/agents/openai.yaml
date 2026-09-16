@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gradium + Tavus Live Avatar"
+  short_description: "Build a live Tavus avatar with a Gradium voice"
+  default_prompt: "Use $gradium-tavus-live-avatar to build my minimal live avatar agent: settle the Tavus face, validate my Gradium Voice Design prompt against it once if needed, then ask what the agent should do."

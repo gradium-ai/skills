@@ -10,7 +10,10 @@ Skills are grouped by the tool they drive:
 ```text
 gradium/     Gradium voice API: TTS, STT, translation, cloning, SDK, docs, migration
 pruna/       Gradium voices driving Pruna AI talking-video models
-lemonslice/  Gradium voice agents with a LemonSlice animated face (via LiveKit)
+live-avatar/ Gradium voice agents with a live avatar face, one folder per face provider:
+  lemonslice/  LemonSlice face animated from a still image (LiveKit Agents)
+  tavus/       Tavus Phoenix face, photoreal and video-trained (LiveKit Agents), with a live pipeline panel
+  heygen/      HeyGen LiveAvatar face in LITE mode (own orchestrator, no LiveKit project needed)
 ```
 
 Each skill is a self-contained folder with a `SKILL.md` and, where useful,
@@ -40,11 +43,18 @@ field names, and behavior notes were checked against the live APIs.
 | `gradium-pruna-video` | Pipe a Gradium voice (flagship or cloned) into Pruna's `p-video-avatar` and `p-video` models to make a portrait or scene talk. Ships `voice_video.py` for the full pipeline and `grade_render.py` for frame-by-frame quality checks. |
 | `gradium-pruna-designed-avatar` | Design a brand-new Gradium voice to match a portrait, audition and approve it, then render a reviewed talking-avatar clip or a small avatar-video product with Pruna `p-video-avatar`. Non-realtime; includes quality and safety checks. |
 
-### `lemonslice/` — live avatars
+### `live-avatar/` — live avatars
 
 | Skill | What it does |
 | --- | --- |
-| `gradium-live-avatar-agent` | Scaffold a realtime voice agent from an image, a voice description, and a role. Gradium handles voice design, STT, and TTS; LiveKit orchestrates the call; LemonSlice animates the face. Includes security and privacy requirements for hosted deployments. |
+| `gradium-live-avatar-agent` | `live-avatar/lemonslice/`. Scaffold a realtime voice agent from an image, a voice description, and a role. Gradium handles voice design, STT, and TTS; LiveKit orchestrates the call; LemonSlice animates the face. Includes security and privacy requirements for hosted deployments. |
+| `gradium-tavus-live-avatar` | `live-avatar/tavus/`. The same stack with a Tavus Phoenix face through Tavus's echo-mode LiveKit PAL: the most photoreal, video-trained custom faces and 24 kHz audio passthrough. Documents face and PAL provisioning, Tavus billing, and an explicit end-conversation teardown. Every generated project includes a live pipeline panel beside the avatar: one sentence per stage (you, Gradium hears you, the LLM thinks, Gradium speaks, Tavus shows the face) and the time from your pause to the avatar's first word. |
+| `gradium-heygen-live-avatar` | `live-avatar/heygen/`. Gradium's take on HeyGen's [LiveAvatar × GPT-Live demo](https://github.com/heygen-com/liveavatar-gpt-live-demos): Gradium streaming STT with semantic turn-taking and streaming TTS, any OpenAI-compatible LLM, and a HeyGen LiveAvatar in LITE mode as the face, with tool calls rendered as on-screen cards. Ships a runnable `orchestrator.py` plus an avatar-first web client; needs no LiveKit project of your own. |
+
+The LemonSlice and Tavus skills share one shape: the LiveKit worker, Gradium
+STT and TTS, a server-side token endpoint, and an avatar-first call page. Only
+the face layer changes. The Tavus skill was exercised end to end (build from
+the skill alone, then a live call) before publication.
 
 ### Skills built by partners
 
@@ -60,9 +70,15 @@ These live in other repositories and are maintained by their authors.
 | --- | --- | --- |
 | `gradium/` | `GRADIUM_API_KEY` | Python 3.10+, `requests`, `websockets`; `ffmpeg` recommended |
 | `pruna/` | `GRADIUM_API_KEY`, `PRUNA_API_KEY` | `ffprobe` for media validation; `ffmpeg` for grading renders |
-| `lemonslice/` | `GRADIUM_API_KEY`, `LEMONSLICE_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | A LiveKit project; an LLM via LiveKit Inference or an OpenAI-compatible endpoint |
+| `live-avatar/lemonslice/` | `GRADIUM_API_KEY`, `LEMONSLICE_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | A LiveKit project; an LLM via LiveKit Inference or an OpenAI-compatible endpoint |
+| `live-avatar/tavus/` | `GRADIUM_API_KEY`, `TAVUS_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Same as above; a LiveKit Cloud (or public) server, since Tavus's avatar joins from its hosted service |
+| `live-avatar/heygen/` | `GRADIUM_API_KEY`, `LIVEAVATAR_API_KEY`, `LLM_MODEL` (+ `LLM_BASE_URL`, `LLM_API_KEY`) | Python 3.10+, `requests`, `websockets`; any OpenAI-compatible LLM endpoint |
 
-Pruna renders and LemonSlice sessions consume paid credits on those platforms.
+Pruna renders, LemonSlice sessions, Tavus conversations, and LiveAvatar
+sessions consume paid credits on those platforms (LiveAvatar sandbox sessions
+are free; Tavus includes 25 free minutes). Each live avatar skill's
+`references/avatar-provisioning.md` (Tavus) or provider docs say where credits
+are bought.
 Keep every key server-side. The `gradium-setup-api-key` skill covers safe
 handling.
 
@@ -80,6 +96,7 @@ skill name.
 # Claude Code
 mkdir -p ~/.claude/skills
 cp -R gradium/gradium-text-to-speech ~/.claude/skills/
+cp -R live-avatar/tavus/gradium-tavus-live-avatar ~/.claude/skills/
 
 # Codex
 mkdir -p ~/.codex/skills
@@ -115,6 +132,8 @@ One prompt per skill and what comes back.
 | `gradium-pruna-video` | "Make portrait.png say this script in my cloned voice." | A lip-synced MP4 and two frame montages for grading |
 | `gradium-pruna-designed-avatar` | "Design a voice to fit this portrait and render the script." | An auditioned voice, one reviewed render (see below) |
 | `gradium-live-avatar-agent` | "Build a live avatar language tutor from this image." | A LiveKit worker, token server, and avatar-only web client |
+| `gradium-heygen-live-avatar` | "Recreate HeyGen's LiveAvatar demo with a Gradium voice and put key terms on screen." | A Python orchestrator, a browser call surface with cards, and a sandbox session to try first |
+| `gradium-tavus-live-avatar` | "Let me talk to Celine, the Tavus stock face, with a Gradium voice." | A LiveKit worker on Tavus's stock LiveKit PAL, a token server, and a call page with the live pipeline panel |
 
 ### Designed-avatar renders
 
@@ -141,6 +160,17 @@ python gradium/gradium-speech-translation/scripts/s2s.py hello.wav --to fr \
 
 `examples/generate.sh` runs every audio script against the live API and doubles
 as a smoke test. See [examples/README.md](examples/README.md).
+
+The HeyGen live avatar is a server, not a one-shot script:
+
+```bash
+cd live-avatar/heygen/gradium-heygen-live-avatar/scripts
+cp .env.example .env            # GRADIUM_API_KEY, LIVEAVATAR_API_KEY, LLM_MODEL, ...
+python orchestrator.py --check  # validates the configuration
+python orchestrator.py          # open http://127.0.0.1:8787 and press Start
+```
+
+Set `LIVEAVATAR_SANDBOX=1` for a free one-minute session while wiring things up.
 
 ## Contributing
 
@@ -174,6 +204,6 @@ speaker's consent.
 - Contact: support@gradium.ai
 - License: [MIT](LICENSE)
 
-Pruna AI, LemonSlice, LiveKit, Pipecat, ElevenLabs, Cartesia, and Deepgram
-are trademarks of their respective owners. This repository is maintained by Gradium
+Pruna AI, LemonSlice, HeyGen, LiveAvatar, Tavus, LiveKit, Pipecat, ElevenLabs,
+Cartesia, and Deepgram are trademarks of their respective owners. This repository is maintained by Gradium
 and is not affiliated with or endorsed by those companies.
