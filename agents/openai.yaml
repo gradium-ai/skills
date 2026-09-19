@@ -1,4 +1,0 @@
-interface:
-  display_name: "Jev Browser"
-  short_description: "Run browser tasks through Jev's fast action loop"
-  default_prompt: "Use $jev-browser to complete this browser task and verify the resulting page."

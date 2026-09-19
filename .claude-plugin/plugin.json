@@ -1,9 +1,0 @@
-{
-  "name": "jev-browser",
-  "version": "0.1.0",
-  "description": "Experimental browser automation skill powered by Jev Ultrafast. Use with caution.",
-  "author": {
-    "name": "timpratim"
-  },
-  "repository": "https://github.com/timpratim/jevbrow"
-}
