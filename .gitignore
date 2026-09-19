@@ -11,6 +11,7 @@ outputs/
 *.ogg
 *.mp4
 !examples/pruna-designed-avatar/*.mp4
+!examples/minimax-designed-avatar/*.mp4
 portrait.*
 voice-audition.*
 avatar.local.*

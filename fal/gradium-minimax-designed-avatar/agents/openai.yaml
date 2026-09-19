@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gradium + MiniMax Designed Avatar"
+  short_description: "Design a voice, then lip-sync its portrait with MiniMax on fal"
+  default_prompt: "Use $gradium-minimax-designed-avatar to create a short talking-avatar video from my portrait: design and audition a fitting Gradium voice, then render and review it with MiniMax H3 Max on fal."

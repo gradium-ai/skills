@@ -10,6 +10,7 @@ Skills are grouped by the tool they drive:
 ```text
 gradium/     Gradium voice API: TTS, STT, translation, cloning, SDK, docs, migration
 pruna/       Gradium voices driving Pruna AI talking-video models
+fal/         Gradium voices driving MiniMax H3 Max lip-sync on fal.ai (short clips)
 live-avatar/ Gradium voice agents with a live avatar face, one folder per face provider:
   lemonslice/  LemonSlice face animated from a still image (LiveKit Agents)
   tavus/       Tavus Phoenix face, photoreal and video-trained (LiveKit Agents), with a live pipeline panel
@@ -43,6 +44,12 @@ field names, and behavior notes were checked against the live APIs.
 | `gradium-pruna-video` | Pipe a Gradium voice (flagship or cloned) into Pruna's `p-video-avatar` and `p-video` models to make a portrait or scene talk. Ships `voice_video.py` for the full pipeline and `grade_render.py` for frame-by-frame quality checks. |
 | `gradium-pruna-designed-avatar` | Design a brand-new Gradium voice to match a portrait, audition and approve it, then render a reviewed talking-avatar clip or a small avatar-video product with Pruna `p-video-avatar`. Non-realtime; includes quality and safety checks. |
 
+### `fal/` — MiniMax lip-sync clips
+
+| Skill | What it does |
+| --- | --- |
+| `gradium-minimax-designed-avatar` | The designed-avatar flow on MiniMax H3 Max lip-sync (`minimax/h3-max/lip-sync/image-to-video` on fal.ai): design and audition a Gradium voice for a portrait, speak the script with it, then lip-sync the portrait in one 5 to 14.8 second generation. Ships `minimax_avatar.py` with `design`, `promote`, `discard`, and `render` subcommands that pad, clip-check, price, submit, poll, and validate. Best for short social, product, and explainer clips; use the Pruna skills for longer takes. |
+
 ### `live-avatar/` — live avatars
 
 | Skill | What it does |
@@ -70,11 +77,13 @@ These live in other repositories and are maintained by their authors.
 | --- | --- | --- |
 | `gradium/` | `GRADIUM_API_KEY` | Python 3.10+, `requests`, `websockets`; `ffmpeg` recommended |
 | `pruna/` | `GRADIUM_API_KEY`, `PRUNA_API_KEY` | `ffprobe` for media validation; `ffmpeg` for grading renders |
+| `fal/` | `GRADIUM_API_KEY`, `FAL_KEY` | Python 3.10+, `requests`; `ffmpeg` and `ffprobe` for audio preparation and validation |
 | `live-avatar/lemonslice/` | `GRADIUM_API_KEY`, `LEMONSLICE_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | A LiveKit project; an LLM via LiveKit Inference or an OpenAI-compatible endpoint |
 | `live-avatar/tavus/` | `GRADIUM_API_KEY`, `TAVUS_API_KEY`, `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Same as above; a LiveKit Cloud (or public) server, since Tavus's avatar joins from its hosted service |
 | `live-avatar/heygen/` | `GRADIUM_API_KEY`, `LIVEAVATAR_API_KEY`, `LLM_MODEL` (+ `LLM_BASE_URL`, `LLM_API_KEY`) | Python 3.10+, `requests`, `websockets`; any OpenAI-compatible LLM endpoint |
 
-Pruna renders, LemonSlice sessions, Tavus conversations, and LiveAvatar
+Pruna renders, MiniMax renders on fal ($0.05 to $0.32 per output second by
+resolution), LemonSlice sessions, Tavus conversations, and LiveAvatar
 sessions consume paid credits on those platforms (LiveAvatar sandbox sessions
 are free; Tavus includes 25 free minutes). Each live avatar skill's
 `references/avatar-provisioning.md` (Tavus) or provider docs say where credits
@@ -131,6 +140,7 @@ One prompt per skill and what comes back.
 | `migrate-to-gradium` | "Switch our ElevenLabs TTS adapter to Gradium." | The smallest provider-layer diff and a smoke test |
 | `gradium-pruna-video` | "Make portrait.png say this script in my cloned voice." | A lip-synced MP4 and two frame montages for grading |
 | `gradium-pruna-designed-avatar` | "Design a voice to fit this portrait and render the script." | An auditioned voice, one reviewed render (see below) |
+| `gradium-minimax-designed-avatar` | "Make a 12-second clip of this portrait introducing our app, with a calm older voice, using MiniMax on fal." | An auditioned voice, a script trimmed to fit 14.8 s, and one validated MiniMax render |
 | `gradium-live-avatar-agent` | "Build a live avatar language tutor from this image." | A LiveKit worker, token server, and avatar-only web client |
 | `gradium-heygen-live-avatar` | "Recreate HeyGen's LiveAvatar demo with a Gradium voice and put key terms on screen." | A Python orchestrator, a browser call surface with cards, and a sandbox session to try first |
 | `gradium-tavus-live-avatar` | "Let me talk to Celine, the Tavus stock face, with a Gradium voice." | A LiveKit worker on Tavus's stock LiveKit PAL, a token server, and a call page with the live pipeline panel |
@@ -148,6 +158,19 @@ Every portrait and voice is AI-generated; no real person is depicted. These are
 fictional scripted performances, not real customer experiences or product claims.
 The creator clip and poster carry that disclosure within the assets themselves.
 
+### MiniMax designed-avatar render
+
+One clip made with `gradium-minimax-designed-avatar`, from voice design to a
+graded render, entirely through the bundled script. Details in
+[examples/minimax-designed-avatar/](examples/minimax-designed-avatar/).
+
+| Callum, Highlands guide (13 s) |
+| --- |
+| [![Callum, a Highlands tour guide avatar](examples/minimax-designed-avatar/highland-guide-callum.jpg)](examples/minimax-designed-avatar/highland-guide-callum.mp4) |
+
+The portrait is synthetic and Callum is fictional. MiniMax renders one
+generation of up to 14.8 seconds, which is why this clip is short.
+
 ## Run the scripts without an agent
 
 ```bash
@@ -160,6 +183,18 @@ python gradium/gradium-speech-translation/scripts/s2s.py hello.wav --to fr \
 
 `examples/generate.sh` runs every audio script against the live API and doubles
 as a smoke test. See [examples/README.md](examples/README.md).
+
+The MiniMax clip pipeline is four subcommands of one script, so the user can
+listen to the audition before anything is promoted or rendered:
+
+```bash
+export GRADIUM_API_KEY=... FAL_KEY=...
+S=fal/gradium-minimax-designed-avatar/scripts/minimax_avatar.py
+python $S design "Calm, older, reassuring; measured pace." --out audition.wav   # prints vox_emb_...
+python $S promote vox_emb_... --name "Arthur"                                   # prints the voice_id
+python $S render "Hi, I'm Arthur. Let's set up your policy." \
+    --image portrait.png --voice <voice_id> --out arthur.mp4
+```
 
 The HeyGen live avatar is a server, not a one-shot script:
 
@@ -204,6 +239,6 @@ speaker's consent.
 - Contact: support@gradium.ai
 - License: [MIT](LICENSE)
 
-Pruna AI, LemonSlice, HeyGen, LiveAvatar, Tavus, LiveKit, Pipecat, ElevenLabs,
-Cartesia, and Deepgram are trademarks of their respective owners. This repository is maintained by Gradium
+Pruna AI, MiniMax, fal, LemonSlice, HeyGen, LiveAvatar, Tavus, LiveKit, Pipecat,
+ElevenLabs, Cartesia, and Deepgram are trademarks of their respective owners. This repository is maintained by Gradium
 and is not affiliated with or endorsed by those companies.

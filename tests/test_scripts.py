@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 KEY = "GRADIUM" + "_API_KEY"
 PKEY = "PRUNA" + "_API_KEY"
 LKEY = "LIVEAVATAR" + "_API_KEY"
+FKEY = "FAL" + "_KEY"
 
 
 def load(name, relative):
@@ -36,6 +37,7 @@ video = load("video", "pruna/gradium-pruna-video/scripts/voice_video.py")
 grade = load("grade", "pruna/gradium-pruna-video/scripts/grade_render.py")
 validator = load("validator", "scripts/validate_repo.py")
 orch = load("orchestrator", "live-avatar/heygen/gradium-heygen-live-avatar/scripts/orchestrator.py")
+mm = load("minimax", "fal/gradium-minimax-designed-avatar/scripts/minimax_avatar.py")
 
 
 def response(body=b"", status=200, location=None, data=None):
@@ -472,6 +474,185 @@ class HeygenOrchestrator(unittest.TestCase):
         (self.dir / "p.md").write_text("Be kind\x07\n" + "x" * 5000)
         self.assertEqual(len(orch.load_prompt(self.dir / "p.md", "")), 4000)
         self.assertNotIn("\x07", orch.load_prompt(self.dir / "p.md", ""))
+
+
+
+class MinimaxAvatar(unittest.TestCase):
+    """Gradium Voice Design + TTS -> MiniMax H3 Max on fal, with every provider faked."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory()
+        root = Path(cls.temp.name)
+        cls.speech = {}
+        for seconds in (2, 6, 16):
+            path = root / f"speech{seconds}.mp4"
+            subprocess.run([
+                "ffmpeg", "-v", "error", "-nostdin", "-f", "lavfi", "-i", "color=s=64x64:r=10",
+                "-f", "lavfi", "-i", "sine=frequency=440", "-t", str(seconds),
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(path),
+            ], check=True, timeout=60)
+            cls.speech[seconds] = path
+        cls.portrait, cls.tall = root / "portrait.png", root / "tall.png"
+        for path, size in ((cls.portrait, "64x64"), (cls.tall, "64x200")):
+            subprocess.run(["ffmpeg", "-v", "error", "-nostdin", "-f", "lavfi", "-i",
+                            f"color=s={size}:r=1", "-frames:v", "1", str(path)], check=True, timeout=30)
+
+    @classmethod
+    def tearDownClass(cls): cls.temp.cleanup()
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.out = Path(tmp.name) / "out.mp4"
+        self.out.write_bytes(b"previous output")
+        for target, kwargs in [
+            ("requests.sessions.Session.send", {"side_effect": AssertionError("network forbidden")}),
+            ("sys.stdout", {"new": io.StringIO()}),
+            ("sys.stderr", {"new": io.StringIO()}),
+        ]:
+            p = patch(target, **kwargs); p.start(); self.addCleanup(p.stop)
+
+    def render(self, audio, *extra):
+        return patch("sys.argv", ["mm", "render", "--audio", str(audio), "--image", str(self.portrait),
+                                  "--out", str(self.out), *extra])
+
+    def test_render_success_sends_inline_inputs_and_downloads_without_a_key(self):
+        media = self.speech[6].read_bytes()
+        posts = [response(data={"request_id": "req_1", "status_url": "https://evil.example/x"})]
+        gets = [response(data={"status": "IN_QUEUE", "queue_position": 2}),
+                response(data={"status": "COMPLETED"}),
+                response(data={"video": {"url": "https://v3.fal.media/files/out.mp4"}, "seed": 7}),
+                response(media)]
+        with patch.dict(os.environ, {FKEY: "test-only"}), self.render(self.speech[6]), \
+             patch.object(mm.requests, "post", side_effect=posts) as post, \
+             patch.object(mm.requests, "get", side_effect=gets) as get, \
+             patch.object(mm.time, "sleep"):
+            self.assertEqual(mm.main(), 0)
+        self.assertEqual(post.call_args.args[0], "https://queue.fal.run/minimax/h3-max/lip-sync/image-to-video")
+        self.assertEqual(post.call_args.kwargs["headers"]["Authorization"], "Key test-only")
+        body = post.call_args.kwargs["json"]
+        self.assertTrue(body["image_url"].startswith("data:image/png;base64,"))
+        self.assertTrue(body["audio_url"].startswith("data:audio/wav;base64,"))
+        self.assertEqual((body["resolution"], body["enable_safety_checker"]), ("768P", True))
+        self.assertNotIn("enable_transcription", body)
+        urls = [c.args[0] for c in get.call_args_list]
+        self.assertEqual(urls[:3], ["https://queue.fal.run/minimax/h3-max/requests/req_1/status"] * 2
+                         + ["https://queue.fal.run/minimax/h3-max/requests/req_1"])
+        self.assertEqual(get.call_args_list[3].kwargs["headers"], {})  # CDN download carries no key
+        self.assertTrue(all(not c.kwargs["allow_redirects"] for c in post.call_args_list + get.call_args_list))
+        self.assertEqual(self.out.read_bytes(), media)
+        self.assertAlmostEqual(mm.media_duration(str(self.out.with_name("out_speech.wav"))), 6, delta=.2)
+
+    def test_audio_window_pads_short_refuses_long_and_clips_only_when_allowed(self):
+        with patch.dict(os.environ, {FKEY: "test-only"}), \
+             patch.object(mm.requests, "post", return_value=response(status=500)) as post:
+            with self.render(self.speech[16]), self.assertRaisesRegex(ValueError, "14.8"):
+                mm.main()
+            self.assertEqual(post.call_count, 0)
+            for source, expected, flag in ((self.speech[2], 5.2, []), (self.speech[16], 14.8, ["--allow-clip"])):
+                with self.render(source, *flag), self.assertRaisesRegex(SystemExit, "HTTP 500"):
+                    mm.main()
+                self.assertAlmostEqual(mm.media_duration(str(self.out.with_name("out_speech.wav"))),
+                                       expected, delta=.2)
+            self.assertEqual(post.call_count, 2)
+            self.assertEqual(post.call_args.kwargs["json"]["enable_safety_checker"], True)
+        self.assertEqual(self.out.read_bytes(), b"previous output")
+
+    def test_portrait_checks_reject_bad_aspect_ratio_and_non_images(self):
+        with patch.dict(os.environ, {FKEY: "test-only"}), \
+             patch.object(mm.requests, "post", side_effect=AssertionError("must not submit")), \
+             patch("sys.argv", ["mm", "render", "--audio", str(self.speech[6]), "--image", str(self.tall),
+                                "--out", str(self.out)]), \
+             self.assertRaisesRegex(ValueError, "aspect ratio"):
+            mm.main()
+        with self.assertRaisesRegex(ValueError, "PNG, JPEG, or WebP"):
+            mm.image_mime(str(self.speech[6]))
+        self.assertEqual(mm.image_mime(str(self.portrait)), "image/png")
+
+    def test_polling_deadline_does_not_resubmit(self):
+        clock = [0]
+        def elapse(seconds): clock[0] += seconds
+        def poll(*args, **kwargs):
+            elapse(min(30, kwargs["timeout"]))
+            return response(data={"status": "IN_PROGRESS", "logs": []})
+        with patch.dict(os.environ, {FKEY: "test-only"}), self.render(self.speech[6]), \
+             patch.object(mm.requests, "post", return_value=response(data={"request_id": "req_1"})) as post, \
+             patch.object(mm.requests, "get", side_effect=poll), \
+             patch.object(mm, "time", Mock(monotonic=lambda: clock[0], sleep=elapse)), \
+             self.assertRaisesRegex(SystemExit, "15 minutes"):
+            mm.main()
+        self.assertEqual(clock[0], 900)
+        self.assertEqual(post.call_count, 1)
+        self.assertEqual(self.out.read_bytes(), b"previous output")
+
+    def test_failed_result_surfaces_validation_detail_and_download_url_checks(self):
+        gets = [response(data={"status": "COMPLETED"}),
+                response(status=422, data={"detail": [{"msg": "aspect ratio out of range\x07"}]})]
+        with patch.dict(os.environ, {FKEY: "test-only"}), self.render(self.speech[6]), \
+             patch.object(mm.requests, "post", return_value=response(data={"request_id": "req_1"})), \
+             patch.object(mm.requests, "get", side_effect=gets), \
+             self.assertRaisesRegex(SystemExit, r"HTTP 422: aspect ratio out of range $"):
+            mm.main()
+        for url in ("http://v3.fal.media/f", "https://user@v3.fal.media/f", "https://v3.fal.media:8443/f"):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                mm.download(url, str(self.out))
+        self.assertEqual(self.out.read_bytes(), b"previous output")
+
+    def test_design_writes_audition_and_reports_candidate(self):
+        audition = self.out.with_name("audition.wav")
+        posts = [response(data={"embeddings": [{"embedding_id": "vox_emb_1", "ready": False}]}),
+                 response(wav())]
+        gets = [response(data={"embeddings": []}),  # not indexed yet
+                response(data={"embeddings": [{"embedding_id": "vox_emb_1", "ready": True}]})]
+        with patch.dict(os.environ, {KEY: "test-only"}), \
+             patch("sys.argv", ["mm", "design", "Calm and warm.", "--language", "fr", "--out", str(audition)]), \
+             patch.object(mm.requests, "post", side_effect=posts) as post, \
+             patch.object(mm.requests, "get", side_effect=gets) as get, \
+             patch.object(mm.requests, "delete", side_effect=AssertionError("must not discard")), \
+             patch.object(mm.time, "sleep"):
+            self.assertEqual(mm.main(), 0)
+        generate, tts = post.call_args_list
+        self.assertEqual(generate.kwargs["json"], {"prompt": "Calm and warm.", "language": "fr", "n_samples": 1,
+                                                   "json_config": {"cfg_scale": 10.0}})
+        self.assertEqual(generate.kwargs["headers"], {"x-api-key": "test-only"})
+        self.assertEqual(tts.kwargs["json"]["voice_id"], "vox_emb_1")
+        self.assertEqual(tts.kwargs["json"]["text"], mm.AUDITION["fr"])
+        self.assertEqual(get.call_args.kwargs["params"], {"embedding_id": "vox_emb_1"})
+        self.assertTrue(all(not c.kwargs["allow_redirects"] for c in post.call_args_list + get.call_args_list))
+        self.assertEqual(audition.read_bytes(), wav())
+        self.assertIn("vox_emb_1", sys.stdout.getvalue())
+
+    def test_design_discards_candidate_when_audition_fails(self):
+        posts = [response(data={"embeddings": [{"embedding_id": "vox_emb_2"}]}), response(status=503)]
+        with patch.dict(os.environ, {KEY: "test-only"}), \
+             patch("sys.argv", ["mm", "design", "Bright.", "--out", str(self.out)]), \
+             patch.object(mm.requests, "post", side_effect=posts), \
+             patch.object(mm.requests, "get",
+                          return_value=response(data={"embeddings": [{"embedding_id": "vox_emb_2", "ready": True}]})), \
+             patch.object(mm.requests, "delete", return_value=response(status=204)) as delete, \
+             self.assertRaises(ValueError):
+            mm.main()
+        self.assertEqual(delete.call_args.args[0], "https://api.gradium.ai/api/voice-generator/embeddings/vox_emb_2")
+        self.assertFalse(delete.call_args.kwargs["allow_redirects"])
+        self.assertEqual(self.out.read_bytes(), b"previous output")
+
+    def test_promote_and_discard_shapes(self):
+        with patch.dict(os.environ, {KEY: "test-only"}), \
+             patch("sys.argv", ["mm", "promote", "vox_emb_3", "--name", "Arthur", "--description", "calm"]), \
+             patch.object(mm.requests, "post", return_value=response(status=201, data={"uid": "voice_abc"})) as post:
+            self.assertEqual(mm.main(), 0)
+        self.assertEqual(post.call_args.args[0], "https://api.gradium.ai/api/voices/from-embedding")
+        self.assertEqual(post.call_args.kwargs["json"],
+                         {"voxium_embedding_id": "vox_emb_3", "name": "Arthur", "description": "calm"})
+        self.assertIn("voice_abc", sys.stdout.getvalue())
+        with patch.dict(os.environ, {KEY: "test-only"}), \
+             patch("sys.argv", ["mm", "promote", "../etc", "--name", "x"]), self.assertRaises(SystemExit):
+            mm.main()
+        with patch.dict(os.environ, {KEY: "test-only"}), patch("sys.argv", ["mm", "discard", "vox_emb_3"]), \
+             patch.object(mm.requests, "delete", return_value=response(status=404)) as delete:
+            self.assertEqual(mm.main(), 0)  # already gone counts as discarded
+        self.assertEqual(delete.call_args.kwargs["headers"], {"x-api-key": "test-only"})
 
 
 if __name__ == "__main__":
