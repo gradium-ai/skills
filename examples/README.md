@@ -2,7 +2,8 @@
 
 The audio examples are generated fresh from the live API, which also
 makes this a one-command smoke test of the audio skills. Finished video
-examples live in [pruna-designed-avatar/](pruna-designed-avatar/).
+examples live in [pruna-designed-avatar/](pruna-designed-avatar/) and
+[minimax-designed-avatar/](minimax-designed-avatar/).
 
 Generate the audio set:
 
