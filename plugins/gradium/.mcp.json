@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gradium": {
+      "type": "http",
+      "url": "https://mcp.gradium.ai/mcp"
+    }
+  }
+}

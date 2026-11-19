@@ -1,0 +1,222 @@
+{
+  "tools": [
+    {
+      "name": "get_credits",
+      "title": "Get credit balances",
+      "description": "Get credit balances, plans, and rollover dates for your organizations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "title": "get_creditsArguments"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_voices",
+      "title": "Browse voices",
+      "description": "Browse voices and choose one that matches the user's description.\n\nFree: returns public descriptions, attributes and tags, not audio.\nUse language (e.g. fr) for any accent, locale (e.g. fr-fr) for a specific\nlocale, gender or use_case for exact filters, ignoring case. search\nmatches a name or ID substring, not a natural-language prompt. Compare\nthe returned metadata with the user's prompt; do not invent voice IDs\nor attributes. Use next_skip with the same filters for more results.\nPass a chosen voice_id with is_pending=false to generate_speech to hear\nit (consumes credits). source=organization lists your custom voices.\nOmit org_uid only when you have one eligible organization.",
+      "inputSchema": {
+        "type": "object",
+        "title": "list_voicesArguments",
+        "properties": {
+          "org_uid": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Org Uid"
+          },
+          "source": {
+            "default": "catalog",
+            "enum": [
+              "catalog",
+              "organization"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Language"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "maxLength": 16,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Locale"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "maxLength": 16,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Gender"
+          },
+          "use_case": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Use Case"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search"
+          },
+          "skip": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Skip",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 20,
+            "minimum": 1,
+            "maximum": 50,
+            "title": "Limit",
+            "type": "integer"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_voice",
+      "title": "Get voice details",
+      "description": "Inspect a known catalog or organization voice ID without generating.\n\nFree: returns public metadata. Use list_voices to discover IDs, then\ngenerate_speech with the selected voice_id to hear it (consumes credits).\nOmit org_uid only when you have one eligible organization.",
+      "inputSchema": {
+        "type": "object",
+        "title": "get_voiceArguments",
+        "required": [
+          "voice_id"
+        ],
+        "properties": {
+          "voice_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "title": "Voice Id"
+          },
+          "org_uid": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Org Uid"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "generate_speech",
+      "title": "Generate speech",
+      "description": "Generate WAV audio with a chosen voice and Gradium's default settings.\n\nUse a voice_id from list_voices or get_voice; omit it for the default.\nFor a requested voice style, browse voices and compare their public\ndescriptions and tags with the prompt before selecting an ID.\nConsumes the selected organization's credits. Returns audio directly;\nsaving and playback depend on the MCP client. Do not automatically retry.\nOmit org_uid only when you have one eligible organization.",
+      "inputSchema": {
+        "type": "object",
+        "title": "generate_speechArguments",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 9000,
+            "title": "Text"
+          },
+          "org_uid": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Org Uid"
+          },
+          "voice_id": {
+            "type": "string",
+            "default": "default",
+            "minLength": 1,
+            "maxLength": 255,
+            "title": "Voice Id"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

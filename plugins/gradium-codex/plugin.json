@@ -1,0 +1,41 @@
+{
+  "name": "gradium",
+  "version": "0.4.0",
+  "description": "Connects Codex to the hosted Gradium MCP to browse and cast voices, generate speech, and check credits.",
+  "author": {
+    "name": "Gradium",
+    "url": "https://gradium.ai"
+  },
+  "homepage": "https://gradium.ai",
+  "license": "MIT",
+  "keywords": [
+    "voice",
+    "audio",
+    "tts",
+    "gradium"
+  ],
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/gradium-setup/SKILL.md",
+      "interface": {
+        "displayName": "Gradium",
+        "shortDescription": "Voice discovery and speech generation",
+        "longDescription": "Discover Gradium voices, generate speech, and check credits through the hosted Gradium MCP.",
+        "developerName": "Gradium",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://gradium.ai",
+        "defaultPrompt": [
+          "Find a warm French voice for narration.",
+          "Read this passage aloud.",
+          "Show my Gradium credit balance."
+        ]
+      }
+    }
+  },
+  "repository": "https://github.com/gradium-ai/skills"
+}
