@@ -1,6 +1,6 @@
 ---
 name: gradium-minimax-designed-avatar
-description: Create a short, polished talking-avatar clip (up to 14.8 seconds) or an avatar-clip product from a portrait, a bespoke voice description, and a script. Gradium Voice Design and TTS produce the approved voice and speech; MiniMax H3 Max lip-sync (minimax/h3-max/lip-sync/image-to-video on fal.ai) animates the portrait. Use when the user mentions MiniMax, H3 Max, fal lip sync, or wants a newly designed voice to fit an image in a short social, product, or explainer clip; do not use for realtime conversations, clips longer than 15 seconds, or general scene-video generation.
+description: "Design a Gradium voice and render a 5 to 14.8 second talking-portrait clip with MiniMax H3 Max lip sync on fal.ai. Use when the user specifies fal, MiniMax, or H3 Max, or the project already uses that renderer."
 license: MIT
 compatibility: Requires internet access, a Gradium API key (GRADIUM_API_KEY), a fal.ai API key (FAL_KEY), and ffmpeg/ffprobe. Voice design and MiniMax renders consume paid credits ($0.05-$0.32 per output second depending on resolution).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY", "FAL_KEY"]}, "primaryEnv": "FAL_KEY"}}

@@ -1,6 +1,6 @@
 ---
 name: gradium-api
-description: Integrate the Gradium voice API (text-to-speech, speech-to-text, speech-to-speech translation, voice cloning, pronunciation dictionaries) with direct HTTP or WebSocket calls — no SDK required. Use whenever the user wants to call Gradium from curl, JavaScript/TypeScript, Go, Rust, or any language without an official SDK, from an edge runtime that cannot install packages, or explicitly asks for raw REST/WebSocket code. Also use as the wire-level reference when debugging any Gradium integration, including SDK-based ones — this skill documents the exact endpoints, auth, message grammar, and error shapes. For Python SDK code, prefer the gradium-sdk skill.
+description: "Implement or debug Gradium requests at the HTTP or WebSocket level. Use when the user asks for curl, raw REST or WebSocket code, or wire-level details such as headers, message fields, and errors. Use gradium-sdk for Python SDK code."
 license: MIT
 compatibility: Requires internet access and a Gradium API key (GRADIUM_API_KEY).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY"]}, "primaryEnv": "GRADIUM_API_KEY"}}

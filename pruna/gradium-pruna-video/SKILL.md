@@ -1,6 +1,6 @@
 ---
 name: gradium-pruna-video
-description: Turn text into a talking video by piping Gradium text-to-speech audio into Pruna AI's video generation models (P-Video-Avatar for talking heads from a portrait, P-Video for audio-conditioned scene video). Use when the user wants a talking avatar, spokesperson clip, lip-synced character, product demo presenter, or any video whose speech should use a specific Gradium voice (flagship or cloned) instead of Pruna's built-in voices — including phrasings like "make this image talk", "voice this video with my cloned voice", "talking banana", or "avatar video from this script". Also use when adding a separately generated audio track to a Pruna video generation.
+description: "Render a Pruna talking portrait or audio-conditioned scene with an existing Gradium voice or supplied audio. Use for P-Video-Avatar or P-Video file outputs. For a new voice designed for a Pruna portrait, use gradium-pruna-designed-avatar."
 license: MIT
 compatibility: Requires internet access, a Gradium API key (GRADIUM_API_KEY), and a Pruna API key (PRUNA_API_KEY). Pruna renders cost real credits (~$0.025/s at 720p).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY", "PRUNA_API_KEY"]}, "primaryEnv": "PRUNA_API_KEY"}}

@@ -1,6 +1,6 @@
 ---
 name: gradium-heygen-live-avatar
-description: Build a live, interruptible avatar voice agent with a HeyGen LiveAvatar face and Gradium voice. Gradium supplies streaming speech-to-text with semantic turn-taking and streaming text-to-speech (flagship, cloned, or designed voice), any OpenAI-compatible LLM supplies the words, and LiveAvatar LITE mode renders the talking face while tool calls land on screen as animated cards. Use when the user wants a realtime talking-head agent on HeyGen or LiveAvatar, wants to port HeyGen's LiveAvatar and GPT-Live demo to Gradium voices, or asks for a live avatar without running their own LiveKit project.
+description: "Build or modify a live avatar voice agent with HeyGen LiveAvatar LITE and Gradium streaming speech. Use when HeyGen or LiveAvatar is requested or already part of the project. Includes the Python orchestrator and browser call interface."
 license: MIT
 compatibility: Requires internet access, Python 3.10+, a Gradium API key (GRADIUM_API_KEY), a HeyGen LiveAvatar API key (LIVEAVATAR_API_KEY), and an OpenAI-compatible chat-completions endpoint (LLM_BASE_URL, LLM_MODEL, LLM_API_KEY). LiveAvatar sessions consume credits (1 credit per minute in LITE mode; sandbox sessions are free).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY", "LIVEAVATAR_API_KEY", "LLM_MODEL"]}, "primaryEnv": "GRADIUM_API_KEY"}}

@@ -21,13 +21,25 @@ Each skill is a self-contained folder with a `SKILL.md` and, where useful,
 `references/` for deeper detail and `scripts/` that run standalone. Endpoints,
 field names, and behavior notes were checked against the live APIs.
 
+## Choose a skill
+
+Start with the result you want. Install the skills for that workflow.
+
+| If you want to | Start with |
+| --- | --- |
+| Add speech to an existing app | `gradium-sdk` for Python or `gradium-api` for direct HTTP and WebSocket. Use `gradium-text-to-speech` for TTS-specific settings, streaming, or file formats. |
+| Replace a provider in your app | `migrate-to-gradium`, with the SDK or raw API skill for the implementation. |
+| Build a new live voice agent | [Gradbot](https://github.com/gradium-ai/gradbot) or your application's framework. Use a provider-specific live-avatar skill when the app needs an animated face. |
+| Transcribe, dub, or clone | `gradium-speech-to-text` for text output, `gradium-speech-translation` for audio output, or `gradium-voice-cloning` to create or manage a voice. |
+| Render a talking avatar to a file | Pruna with an existing voice or supplied audio, Pruna with a newly designed voice, or MiniMax on fal for its short-clip workflow. If the renderer is unspecified, choose it with the user before starting a paid render. |
+
 ## Skills
 
 ### `gradium/` — the voice API
 
 | Skill | What it does |
 | --- | --- |
-| `gradium-text-to-speech` | Text in, speech out. REST for files, WebSocket for streaming LLM output. Speed, pauses, pronunciation fixes, word timestamps, telephony formats. Ships `tts.py` and the flagship voice catalog. |
+| `gradium-text-to-speech` | Integrate REST TTS or WebSocket streaming in an app, or synthesize with API-specific controls. Speed, pauses, pronunciation fixes, word timestamps, telephony formats. Ships `tts.py` and the flagship voice catalog. |
 | `gradium-speech-to-text` | Audio in, text out. Batch and realtime, semantic turn-taking for voice agents, keyword boosting so product names come out right, SRT subtitles. Ships `transcribe.py`. |
 | `gradium-speech-translation` | Speech in one language, speech out in another. Dubbing, live interpretation, and re-voicing a recording. Ships `s2s.py`. |
 | `gradium-voice-cloning` | Clone a voice from about ten seconds of audio and manage the voice library. Includes consent guidance. |
@@ -55,7 +67,7 @@ field names, and behavior notes were checked against the live APIs.
 | Skill | What it does |
 | --- | --- |
 | `gradium-live-avatar-agent` | `live-avatar/lemonslice/`. Scaffold a realtime voice agent from an image, a voice description, and a role. Gradium handles voice design, STT, and TTS; LiveKit orchestrates the call; LemonSlice animates the face. Includes security and privacy requirements for hosted deployments. |
-| `gradium-tavus-live-avatar` | `live-avatar/tavus/`. The same stack with a Tavus Phoenix face through Tavus's echo-mode LiveKit PAL: the most photoreal, video-trained custom faces and 24 kHz audio passthrough. Documents face and PAL provisioning, Tavus billing, and an explicit end-conversation teardown. Every generated project includes a live pipeline panel beside the avatar: one sentence per stage (you, Gradium hears you, the LLM thinks, Gradium speaks, Tavus shows the face) and the time from your pause to the avatar's first word. |
+| `gradium-tavus-live-avatar` | `live-avatar/tavus/`. The same stack with a Tavus Phoenix face through Tavus's echo-mode LiveKit PAL: video-trained custom faces and 24 kHz audio passthrough. Documents face and PAL provisioning, Tavus billing, and an explicit end-conversation teardown. Every generated project includes a live pipeline panel beside the avatar: one sentence per stage (you, Gradium hears you, the LLM thinks, Gradium speaks, Tavus shows the face) and the time from your pause to the avatar's first word. |
 | `gradium-heygen-live-avatar` | `live-avatar/heygen/`. Gradium's take on HeyGen's [LiveAvatar × GPT-Live demo](https://github.com/heygen-com/liveavatar-gpt-live-demos): Gradium streaming STT with semantic turn-taking and streaming TTS, any OpenAI-compatible LLM, and a HeyGen LiveAvatar in LITE mode as the face, with tool calls rendered as on-screen cards. Ships a runnable `orchestrator.py` plus an avatar-first web client; needs no LiveKit project of your own. |
 
 The LemonSlice and Tavus skills share one shape: the LiveKit worker, Gradium
@@ -115,7 +127,7 @@ cp -R gradium/gradium-text-to-speech ~/.codex/skills/
 Then ask for what you want in plain language:
 
 ```text
-Generate a voiceover for this script with a British male voice, slightly slower.
+Use the Gradium TTS API to export this script as Opus at a slightly slower speed.
 Transcribe call.wav and make sure it spells "Gradium" correctly.
 Dub intro.mp4 into French using the speaker's own cloned voice.
 ```
@@ -129,19 +141,19 @@ One prompt per skill and what comes back.
 
 | Skill | Try asking | You get |
 | --- | --- | --- |
-| `gradium-text-to-speech` | "Narrate docs/intro.md with a warm Irish voice, slightly slower, as an Opus file." | `intro.ogg` plus word timestamps if you want captions |
+| `gradium-text-to-speech` | "Use the Gradium TTS API to narrate docs/intro.md at a slightly slower speed and export Opus." | `intro.ogg` plus word timestamps if you want captions |
 | `gradium-speech-to-text` | "Transcribe call.wav and make sure it spells Gradium and Mbappé right." | A transcript with those names boosted, optionally an SRT |
 | `gradium-speech-translation` | "Dub intro.mp4 into French in the speaker's own voice." | A French audio track in a cloned voice, plus the translated script |
 | `gradium-voice-cloning` | "Clone my voice from sample.wav and use it for the narration." | A permanent `voice_id` after a consent check, wired into TTS |
 | `gradium-sdk` | "Write a FastAPI endpoint that streams Gradium TTS for LLM output." | Async SDK code using the realtime call shape |
 | `gradium-api` | "Call Gradium TTS from a Cloudflare Worker in TypeScript, no SDK." | Raw `fetch` and WebSocket code with the exact message grammar |
 | `gradium-docs` | "Which Gradium page covers Twilio audio formats?" | The one docs URL, fetched as markdown |
-| `gradium-setup-api-key` | "My Gradium calls return 401." | A key check, the fix, and a credits readout as proof |
+| `gradium-setup-api-key` | "My direct Gradium REST calls return 401." | A key check, the fix, and a credits readout as proof |
 | `migrate-to-gradium` | "Switch our ElevenLabs TTS adapter to Gradium." | The smallest provider-layer diff and a smoke test |
-| `gradium-pruna-video` | "Make portrait.png say this script in my cloned voice." | A lip-synced MP4 and two frame montages for grading |
-| `gradium-pruna-designed-avatar` | "Design a voice to fit this portrait and render the script." | An auditioned voice, one reviewed render (see below) |
+| `gradium-pruna-video` | "Render portrait.png with Pruna using my existing cloned voice and this script." | A lip-synced MP4 and two frame montages for grading |
+| `gradium-pruna-designed-avatar` | "Design a new voice to fit this portrait and render the script with Pruna." | An auditioned voice, one reviewed render (see below) |
 | `gradium-minimax-designed-avatar` | "Make a 12-second clip of this portrait introducing our app, with a calm older voice, using MiniMax on fal." | An auditioned voice, a script trimmed to fit 14.8 s, and one validated MiniMax render |
-| `gradium-live-avatar-agent` | "Build a live avatar language tutor from this image." | A LiveKit worker, token server, and avatar-only web client |
+| `gradium-live-avatar-agent` | "Build a live avatar language tutor from this image with LemonSlice and LiveKit." | A LiveKit worker, token server, and avatar-only web client |
 | `gradium-heygen-live-avatar` | "Recreate HeyGen's LiveAvatar demo with a Gradium voice and put key terms on screen." | A Python orchestrator, a browser call surface with cards, and a sandbox session to try first |
 | `gradium-tavus-live-avatar` | "Let me talk to Celine, the Tavus stock face, with a Gradium voice." | A LiveKit worker on Tavus's stock LiveKit PAL, a token server, and a call page with the live pipeline panel |
 

@@ -1,6 +1,6 @@
 ---
 name: gradium-live-avatar-agent
-description: Build a minimal, extensible live avatar voice agent from an avatar image, a voice description, and an agent role or prompt. Use LiveKit for realtime orchestration, Gradium for Voice Design, STT, and TTS, and LemonSlice for the animated face. Use when creating or modifying this specific voice-avatar stack.
+description: "Build or modify a live avatar agent that uses LemonSlice for the animated face, LiveKit for the call, and Gradium for speech and voice design. Use when LemonSlice is requested or already part of the project."
 license: MIT
 compatibility: Requires internet access, Python 3.10+, a Gradium API key (GRADIUM_API_KEY), a LemonSlice API key (LEMONSLICE_API_KEY), and LiveKit credentials. Avatar sessions and voice design consume paid credits.
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY", "LEMONSLICE_API_KEY", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"]}, "primaryEnv": "GRADIUM_API_KEY"}}

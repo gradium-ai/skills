@@ -1,6 +1,6 @@
 ---
 name: gradium-setup-api-key
-description: Set up and validate a Gradium API key. Use when the user needs to configure Gradium credentials, when any Gradium call fails with 401/403 or "API key is revoked or expired", when GRADIUM_API_KEY is missing from the environment, or when the user mentions getting access to Gradium. Checks whether a working key is already configured first and only walks through setup when needed. Also covers safe key handling for browser apps (short-lived tokens).
+description: "Set up or troubleshoot GRADIUM_API_KEY for direct Gradium API and SDK calls. Use for missing, revoked, or expired API keys and for short-lived browser tokens."
 license: MIT
 compatibility: Requires internet access to gradium.ai and api.gradium.ai.
 ---
