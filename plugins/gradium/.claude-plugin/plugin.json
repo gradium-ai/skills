@@ -1,0 +1,20 @@
+{
+  "name": "gradium",
+  "displayName": "Gradium",
+  "version": "0.2.0",
+  "description": "Connects Claude Code to the hosted Gradium MCP to browse and cast voices, generate speech, and check credits.",
+  "author": {
+    "name": "Gradium",
+    "url": "https://gradium.ai"
+  },
+  "homepage": "https://docs.gradium.ai/integrations/mcp",
+  "keywords": [
+    "gradium",
+    "voice",
+    "tts",
+    "speech",
+    "audio"
+  ],
+  "license": "MIT",
+  "repository": "https://github.com/gradium-ai/skills"
+}

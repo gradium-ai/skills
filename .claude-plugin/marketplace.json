@@ -1,0 +1,22 @@
+{
+  "name": "gradium",
+  "description": "Gradium plugins for Claude Code: voice casting and text-to-speech through the hosted Gradium MCP.",
+  "owner": {
+    "name": "Gradium",
+    "url": "https://gradium.ai"
+  },
+  "plugins": [
+    {
+      "name": "gradium",
+      "source": "./plugins/gradium",
+      "description": "Hosted Gradium MCP (beta): voice discovery and casting, speech generation, and credit balances.",
+      "category": "productivity",
+      "tags": [
+        "voice",
+        "tts",
+        "speech",
+        "audio"
+      ]
+    }
+  ]
+}

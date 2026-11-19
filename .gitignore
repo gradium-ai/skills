@@ -17,3 +17,6 @@ voice-audition.*
 avatar.local.*
 *_sweep.png
 *_mouth.png
+
+# Gradium MCP plugin eval results
+plugins/*/evals/results/

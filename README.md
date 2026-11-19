@@ -15,6 +15,7 @@ live-avatar/ Gradium voice agents with a live avatar face, one folder per face p
   lemonslice/  LemonSlice face animated from a still image (LiveKit Agents)
   tavus/       Tavus Phoenix face, photoreal and video-trained (LiveKit Agents), with a live pipeline panel
   heygen/      HeyGen LiveAvatar face in LITE mode (own orchestrator, no LiveKit project needed)
+plugins/     The gradium plugin for Claude Code and Codex, using the hosted Gradium MCP
 ```
 
 Each skill is a self-contained folder with a `SKILL.md` and, where useful,
@@ -95,6 +96,27 @@ For the tested standalone-script environment, install `pip install -r requiremen
 in a virtual environment. Each skill remains independently copyable; its script
 dependencies are documented locally. Keep private media in an ignored `outputs/`
 directory and use `--out` to select the destination.
+
+## Gradium MCP plugin
+
+The `gradium` plugin connects Claude Code or Codex to the hosted Gradium MCP at
+`https://mcp.gradium.ai/mcp` and adds four skills: setup, credits, voice
+selection, and speech generation. You sign in with your Gradium account, so you
+don't need an API key.
+
+```bash
+# Claude Code
+claude plugin marketplace add gradium-ai/skills
+claude plugin install gradium@gradium
+
+# Codex
+codex plugin marketplace add gradium-ai/skills
+codex plugin add gradium@gradium
+```
+
+Start a new session after installing. Details are in
+[plugins/README.md](plugins/README.md) and the
+[Gradium MCP docs](https://docs.gradium.ai/integrations/mcp).
 
 ## Install
 
