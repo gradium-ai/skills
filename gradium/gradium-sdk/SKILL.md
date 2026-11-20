@@ -1,6 +1,6 @@
 ---
 name: gradium-sdk
-description: Write Python code with the official Gradium SDK (pip install gradium) for text-to-speech, speech-to-text, speech-to-speech translation, voice cloning, and credit checks. Use whenever the user wants Gradium in a Python app, script, notebook, FastAPI/voice-agent backend, or asks to "use the gradium package" — the SDK wraps the WebSocket protocol, base64 handling, and NDJSON parsing so you don't reimplement them. Covers the async client, one-shot vs pull-stream vs realtime call shapes, result objects, the bundled gradium CLI, and the exact method signatures of SDK v0.6. For raw HTTP/WebSocket calls from other languages, use the gradium-api skill instead.
+description: "Write Python integrations with the official Gradium SDK or use its CLI when requested. Covers speech synthesis, transcription, speech translation, voice cloning, and credit checks in application code using the gradium package. Use the raw API skill for direct HTTP or WebSocket requests."
 license: MIT
 compatibility: Requires internet access, Python 3.10+, pip install gradium, and a Gradium API key (GRADIUM_API_KEY).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY"]}, "primaryEnv": "GRADIUM_API_KEY"}}

@@ -1,6 +1,6 @@
 ---
 name: migrate-to-gradium
-description: Migrate codebases from ElevenLabs, Cartesia, or Deepgram voice APIs to Gradium. Use when the user asks to switch voice, TTS, STT, speech, transcription, websocket, streaming audio, or provider adapter code to Gradium; says "migrate to Gradium", "switch the voice API to Gradium", "move from Cartesia/Deepgram/ElevenLabs", or wants compatibility-style endpoint/auth/field rewrites for voice API integrations.
+description: "Replace ElevenLabs, Cartesia, or Deepgram with Gradium in an existing application. Use when the user requests a provider migration for TTS, STT, streaming audio, or a voice adapter. Preserve the app framework and use the API or SDK guidance for the replacement calls."
 license: MIT
 compatibility: Requires internet access and a Gradium API key (GRADIUM_API_KEY) for smoke tests.
 ---

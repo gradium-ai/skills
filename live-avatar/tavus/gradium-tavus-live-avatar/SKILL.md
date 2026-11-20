@@ -1,6 +1,6 @@
 ---
 name: gradium-tavus-live-avatar
-description: Build a minimal, extensible live avatar voice agent with a Tavus Phoenix face. Use LiveKit Agents for realtime orchestration, Gradium for Voice Design, STT, and TTS, and the Tavus LiveKit plugin (echo-mode PAL) for the photoreal talking face. Use when the user wants a Tavus, Phoenix, or CVI avatar on a Gradium voice, or asks for the most photoreal video-trained live avatar.
+description: "Build or modify a live avatar voice agent with Tavus Phoenix and Gradium streaming speech. Use when Tavus, Phoenix, or CVI is requested or already part of the project. Uses LiveKit and the Tavus echo-mode plugin."
 license: MIT
 compatibility: Requires internet access, Python 3.10+, a Gradium API key (GRADIUM_API_KEY), a Tavus API key (TAVUS_API_KEY), and LiveKit credentials. Tavus conversations consume conversational video minutes; custom faces need a paid Tavus plan.
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY", "TAVUS_API_KEY", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"]}, "primaryEnv": "GRADIUM_API_KEY"}}

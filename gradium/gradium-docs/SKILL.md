@@ -1,6 +1,6 @@
 ---
 name: gradium-docs
-description: Find the right Gradium documentation page for any voice AI task. Use whenever someone needs Gradium docs, asks which Gradium API or transport to use, wants to migrate an existing voice integration from another provider to Gradium, is debugging a Gradium integration and needs the authoritative reference, or asks a Gradium question you can't answer confidently from the other gradium skills. Every Gradium docs page is fetchable as clean markdown — this skill maps tasks to exact URLs so you fetch one page instead of crawling.
+description: "Find authoritative Gradium documentation when the user asks for a reference, link, or an explanation grounded in the docs. Use it to locate the relevant guide or API reference while troubleshooting. Use the relevant implementation skill when the user asks for code changes."
 license: MIT
 compatibility: Requires internet access.
 ---

@@ -1,12 +1,14 @@
 ---
 name: gradium-text-to-speech
-description: Convert text to natural-sounding speech with the Gradium TTS API. Use when generating audio from text, creating voiceovers or narration, building voice apps or realtime voice agents, streaming LLM output as speech, tuning voice speed/expressiveness, adding pauses, fixing pronunciation of brand names or jargon, or synthesizing speech in English, French, German, Spanish, or Portuguese — even if the user just says "make this talk", "read this aloud", or "generate audio". Covers one-shot REST synthesis, low-latency WebSocket streaming, word-level timestamps, voice settings, pronunciation dictionaries, and telephony output formats.
+description: "Integrate Gradium text-to-speech into an app or script, or synthesize with explicit API requirements such as streaming, custom output formats, speed, pauses, word timestamps, telephony, or pronunciation dictionaries. Use for Gradium REST TTS or WebSocket TTS workflows."
 license: MIT
 compatibility: Requires internet access and a Gradium API key (GRADIUM_API_KEY).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY"]}, "primaryEnv": "GRADIUM_API_KEY"}}
 ---
 
 # Gradium Text-to-Speech
+
+Use this skill to integrate TTS into an app or to render audio when the user requests the Gradium API or needs its synthesis settings.
 
 Auth: `x-api-key: $GRADIUM_API_KEY` header. Model: `model_name`
 defaults to `"default"` — omit it unless told otherwise. Voices are

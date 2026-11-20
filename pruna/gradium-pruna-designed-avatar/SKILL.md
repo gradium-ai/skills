@@ -1,6 +1,6 @@
 ---
 name: gradium-pruna-designed-avatar
-description: Create a polished, non-realtime talking-avatar video or avatar-video product from a portrait, a bespoke voice description, and spoken content. Use Gradium Voice Design and TTS for the approved voice, then Pruna p-video-avatar for lip-synced video. Use when the avatar needs a newly designed voice that fits its visual character; do not use for realtime conversations or general scene-video generation.
+description: "Design a new Gradium voice for a portrait and render a recorded talking-avatar clip with Pruna P-Video-Avatar. Use for Pruna workflows that require auditioning and approving a newly designed voice. Use gradium-pruna-video when the voice or audio already exists."
 license: MIT
 compatibility: Requires internet access, a Gradium API key (GRADIUM_API_KEY), and a Pruna API key (PRUNA_API_KEY). Voice design and Pruna renders consume paid credits.
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY", "PRUNA_API_KEY"]}, "primaryEnv": "PRUNA_API_KEY"}}

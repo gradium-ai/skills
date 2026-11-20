@@ -1,6 +1,6 @@
 ---
 name: gradium-voice-cloning
-description: Clone voices and manage the voice library with the Gradium API. Use when creating a custom voice from an audio sample, cloning someone's voice for TTS, managing (listing, renaming, deleting) cloned voices, choosing a voice for a Gradium app, or making cloned speech sound more (or less) like the original speaker — even if the user just says "make it sound like me" or "use my voice for the narration". Covers the voices CRUD API, sample requirements, similarity tuning with cfg_coef, and the flagship voice catalog.
+description: "Create a custom Gradium voice from a speech sample or manage clones through the Gradium voices API. Use for cloning, renaming, deleting, and similarity tuning."
 license: MIT
 compatibility: Requires internet access and a Gradium API key (GRADIUM_API_KEY).
 metadata: {"openclaw": {"requires": {"env": ["GRADIUM_API_KEY"]}, "primaryEnv": "GRADIUM_API_KEY"}}
