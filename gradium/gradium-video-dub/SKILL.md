@@ -51,7 +51,8 @@ python $S/render.py $W [--keep-audio]                             # -> $W/final.
 
 ### 1. Source timing
 `transcribe_source.py` writes `source.json`: the source sentences with start times and the
-moment the speaker stops (`speech_end`). If the video has burned-in subtitles,
+moment the speaker stops (`speech_end`). Audio longer than the 300 s STT session cap is split
+at quiet points and stitched back onto one timeline. If the video has burned-in subtitles,
 `detect_burned_subs.py` also writes `subs_sheet_*.png` contact sheets (subtitle strip every
 0.5 s, timestamped). Read them: human-edited captions are often more accurate than STT for
 both wording and timing. Detection looks for white text; for other colours, write
@@ -105,7 +106,8 @@ Show the user the corrected sentences before the final render when the stakes ar
 ### 5. Build and render
 `build_dub.py` re-records changed lines with TTS in the chosen voice. It checks each take
 with STT and retries when the clone slips into the source language, and caches good takes
-so later runs stay stable. It then places each sentence at its `onset` and writes
+so later runs stay stable. If no take of a line passes after five tries, it stops and prints
+what it wanted and what it heard: reword that line or set `spoken`, then rerun. It then places each sentence at its `onset` and writes
 `dub_track.wav`, `subs.ass` and `placement.json`. `--subs-only` skips audio and times the
 subtitles to the onsets.
 

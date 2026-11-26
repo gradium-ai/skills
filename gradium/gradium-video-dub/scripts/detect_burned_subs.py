@@ -12,12 +12,17 @@ video, wd = sys.argv[1], sys.argv[2]
 W, H = map(int, subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
         "stream=width,height", "-of", "csv=p=0", video], capture_output=True, text=True).stdout.strip().split(","))
 y0 = int(H * 0.55); h0 = H - y0
-raw = subprocess.run(["ffmpeg", "-v", "error", "-i", video, "-vf", f"fps=4,crop={W}:{h0}:0:{y0}",
-                      "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout
-fr = np.frombuffer(raw, np.uint8).reshape(-1, h0, W, 3)
-white = fr.min(axis=3) > 235                       # subtitle text is near-pure white
-white &= ~(white.mean(axis=0) > 0.5)               # drop static white areas (screens, walls)
-rows = white.sum(axis=(0, 2)); n = len(fr)
+# stream frames one at a time and count how often each pixel is near-pure white (subtitle text),
+# so memory stays flat however long the video is
+proc = subprocess.Popen(["ffmpeg", "-v", "error", "-i", video, "-vf", f"fps=4,crop={W}:{h0}:0:{y0}",
+                         "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
+count, n, size = np.zeros((h0, W), np.int32), 0, h0 * W * 3
+while len(buf := proc.stdout.read(size)) == size:
+    count += np.frombuffer(buf, np.uint8).reshape(h0, W, 3).min(axis=2) > 235
+    n += 1
+if proc.wait() != 0: raise SystemExit("ffmpeg failed to decode the video")
+count[count > n * 0.5] = 0                         # drop static white areas (screens, walls)
+rows = count.sum(axis=1)
 text_rows = np.where(rows > n * 3)[0]
 # group rows into runs (allow small gaps between two subtitle lines), keep the lowest compact run
 runs = []

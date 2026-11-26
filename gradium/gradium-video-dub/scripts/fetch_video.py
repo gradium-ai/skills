@@ -15,6 +15,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 def curl(url, path):
     subprocess.run(["curl", "-sSL", "--fail", "-A", UA, "-o", path, url], check=True)
 
+page = None                                                          # set when the URL is a page to parse
 if os.path.exists(src):
     shutil.copy(src, dst)
 elif shutil.which("yt-dlp") and subprocess.run(
@@ -23,6 +24,12 @@ elif shutil.which("yt-dlp") and subprocess.run(
 else:
     page = os.path.join(outdir, "page.html")
     curl(src, page)
+    probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_type",
+                            "-of", "csv=p=0", page], capture_output=True, text=True).stdout
+    if "video" in probe:                                             # a direct video URL, not a page
+        os.replace(page, dst)
+        page = None
+if page:
     text = open(page, encoding="utf-8", errors="replace").read()
     cands = []  # (bitrate, url)
     for m in re.finditer(r'data-sources="([^"]+)"', text):           # LinkedIn

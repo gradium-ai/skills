@@ -84,7 +84,7 @@ async def rerecord():
     async def one(k):
         say = script[k].get("spoken") or script[k]["text"]
         path = f"{wd}/tts_cache/{hashlib.sha1(f'{a.voice}|{say}'.encode()).hexdigest()[:16]}.npy"
-        if os.path.exists(path): return k, np.load(path)
+        if os.path.exists(path): return k, np.load(path), None   # only verified takes are cached
         best = (-1, None)
         for attempt in range(5):
             async with sem:
@@ -99,15 +99,24 @@ async def rerecord():
             # STT may write numbers as digits ("24 7") or words: accept a match with either form
             score = max(difflib.SequenceMatcher(None, words(t), words(heard)).ratio() for t in (say, script[k]["text"]))
             print(f"  line {k + 1} take {attempt + 1}: {score:.2f}  heard: {heard.strip()}", flush=True)
-            if score > best[0]: best = (score, pcm)
-            if score >= 0.92: break                      # one wrong word in a short line fails
+            if score > best[0]: best = (score, pcm, heard.strip())
+            if score >= PASS: break
         assert r.sample_rate == SR
+        if best[0] < PASS:                               # never cache or place an unverified take
+            return k, None, best
         clip = trim(best[1].astype(np.float32)); np.save(path, clip)
-        return k, clip
+        return k, clip, best
     return await asyncio.gather(*[one(k) for k in redo])
 
+PASS = 0.92                                          # one wrong word in a short line fails
+results = asyncio.run(rerecord())
+failed = [(k, best) for k, clip, best in results if clip is None]
+if failed:
+    for k, (score, _, heard) in failed:
+        print(f"line {script[k]['id']}: no take passed STT ({score:.2f})\n  wanted: {script[k].get('spoken') or script[k]['text']}\n  heard:  {heard}")
+    raise SystemExit("Reword these lines (or set 'spoken') in script.json and rerun; passing takes are cached.")
 ref = np.median([rms(c) for k, c in enumerate(clips) if k not in redo] or [3000.0])
-for k, clip in asyncio.run(rerecord()):
+for k, clip, _ in results:
     clips[k] = clip * (ref / rms(clip))             # match loudness to the live output
 
 def stretch(x, tempo):
@@ -117,21 +126,23 @@ def stretch(x, tempo):
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", f"{d}/i.wav", "-af", f"rubberband=tempo={tempo:.4f}:pitchq=quality", f"{d}/o.wav"], check=True)
         with wave.open(f"{d}/o.wav") as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32)
 
-track = np.zeros(int((video_dur + 30) * SR), np.float32)
-cursor, placed = 0.0, []
+cursor, placed, layout = 0.0, [], []
 for k, clip in enumerate(clips):
     onset = script[k]["onset"]
     slot_end = script[k + 1]["onset"] - 0.1 if k + 1 < len(clips) else speech_end + 0.2
     start = max(onset, cursor)
     tempo = min(a.max_tempo, max(1.0, (len(clip) / SR) / max(0.3, slot_end - start)))
     if tempo > 1.001: clip = stretch(clip, tempo)
-    i = int(start * SR); track[i:i + len(clip)] += clip
+    layout.append((int(start * SR), clip))
     end = start + len(clip) / SR; cursor = end + 0.06
     placed.append({"id": script[k]["id"], "onset": onset, "start": round(start, 2), "end": round(end, 2),
                    "drift": round(start - onset, 2), "tempo": round(tempo, 3), "rerecorded": k in redo, "text": script[k]["text"]})
 
 final = max(video_dur, cursor + 0.4)
-track = track[: int(final * SR)]; track *= min(1.0, 30000 / max(1.0, np.max(np.abs(track))))
+# size the track from the actual placements so a long overrun still builds and reports its drift
+track = np.zeros(max(int(final * SR), max((i + len(c) for i, c in layout), default=0)), np.float32)
+for i, clip in layout: track[i:i + len(clip)] += clip
+track = track[: int(final * SR)]; track *= min(1.0, 30000 / max(1.0, np.max(np.abs(track), initial=0.0)))
 with wave.open(f"{wd}/dub_track.wav", "wb") as w:
     w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes(track.astype(np.int16).tobytes())
 open(f"{wd}/dub_duration.txt", "w").write(f"{final:.3f}")
