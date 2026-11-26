@@ -32,6 +32,7 @@ field names, and behavior notes were checked against the live APIs.
 | `gradium-speech-to-text` | Audio in, text out. Batch and realtime, semantic turn-taking for voice agents, keyword boosting so product names come out right, SRT subtitles. Ships `transcribe.py`. |
 | `gradium-speech-translation` | Speech in one language, speech out in another. Dubbing, live interpretation, and re-voicing a recording. Ships `s2s.py`. |
 | `gradium-voice-cloning` | Clone a voice from about ten seconds of audio and manage the voice library. Includes consent guidance. |
+| `gradium-video-dub` | Translate a video (a file, or a LinkedIn, YouTube, or X post) between English, French, German, Spanish, and Portuguese, then burn in translated subtitles or dub it in the speaker's own cloned voice, timed to the speaker. Covers old burned-in subtitles. Ships scripts for each step from download to final render; needs `ffmpeg` with libass and rubberband, plus `gradium` and `numpy`. |
 | `gradium-sdk` | The Python SDK (`pip install gradium`): async client, call shapes, result objects, CLI. |
 | `gradium-api` | Wire-level REST and WebSocket reference for any language or edge runtime, plus error shapes. |
 | `gradium-docs` | Maps a task to the exact page on docs.gradium.ai so an agent fetches one page instead of crawling. |
@@ -155,6 +156,7 @@ One prompt per skill and what comes back.
 | `gradium-speech-to-text` | "Transcribe call.wav and make sure it spells Gradium and Mbappé right." | A transcript with those names boosted, optionally an SRT |
 | `gradium-speech-translation` | "Dub intro.mp4 into French in the speaker's own voice." | A French audio track in a cloned voice, plus the translated script |
 | `gradium-voice-cloning` | "Clone my voice from sample.wav and use it for the narration." | A permanent `voice_id` after a consent check, wired into TTS |
+| `gradium-video-dub` | "Dub this LinkedIn video into English in the speaker's own voice." | A reviewed translation script and `final.mp4` with the dub and matching subtitles burned in |
 | `gradium-sdk` | "Write a FastAPI endpoint that streams Gradium TTS for LLM output." | Async SDK code using the realtime call shape |
 | `gradium-api` | "Call Gradium TTS from a Cloudflare Worker in TypeScript, no SDK." | Raw `fetch` and WebSocket code with the exact message grammar |
 | `gradium-docs` | "Which Gradium page covers Twilio audio formats?" | The one docs URL, fetched as markdown |
