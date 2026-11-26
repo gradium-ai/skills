@@ -15,9 +15,15 @@ For longer work, split at paragraph, then sentence, boundaries into parts under 
 
 ## Before generating audio
 
-Confirm the client can save the result before calling `generate_speech`. On Codex CLI, use Code Mode when the session exposes it. Call the MCP tool from the Code Mode cell, extract the raw `audio/wav` block, and save the decoded bytes in the same cell. Return the file path to the model. For large responses, write in bounded chunks to a temporary file and move it to the requested path after verification. Avoid printing the audio payload. If the client saves MCP audio itself, reuse its file instead.
+If the host saves tool audio as a file or attachment, use its native path. In Codex CLI, an ordinary tool call and a Code Mode cell can both receive only an audio placeholder. For a user-authorized generation on a local CLI without native file delivery, run the bundled [save_wav.py](scripts/save_wav.py) **as the first and only generation call**. Use the same working directory and configured Gradium connection. The helper calls the hosted MCP through Codex and saves the WAV before the model sees the response.
 
-If neither path is available, stop before spending credits. For Codex CLI versions that support Code Mode, the user can start a new session with `--enable code_mode`. A model that accepts audio does not by itself give the assistant a WAV file.
+Use the organization already selected in the chat. If unknown, call `get_credits` for organization selection, use the sole eligible org automatically, or ask which org to use. Stop if none are eligible. Pass the exact connected server name, organization UID, optional `--voice-id`, and a new output filename. Supply the user's exact speech text on stdin. Run from the current workspace and resolve the script relative to this skill file. For example:
+
+```sh
+printf '%s' 'Hello world' | python3 "/absolute/path/to/skill/scripts/save_wav.py" --server SERVER --org-uid ORG_UID --output hello.wav
+```
+
+Use the normal permission flow for this specific billable invocation. Honor any MCP tool denial or restriction. If the authorized connection, CLI, or execution permission is unavailable, stop before generation. After an omission, timeout, or uncertain outcome, ask before starting another paid generation. For replay or a failed player, use the existing file.
 
 ## Verify audio delivery
 
