@@ -1,6 +1,6 @@
 {
   "name": "gradium",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Connects Codex to the hosted Gradium MCP to browse and cast voices, generate speech, and check credits.",
   "author": {
     "name": "Gradium",

@@ -49,7 +49,7 @@ codex plugin add gradium@gradium
 
 Start a new Codex session and sign in to the Gradium MCP when prompted. The Codex package is in `plugins/gradium-codex` and connects to `https://mcp.gradium.ai/mcp`.
 
-The bundled speech-generation skill handles saving, playback, and replay. On macOS it uses `afplay` for local playback. If your Codex CLI session cannot save the MCP audio, start a new session with `codex --enable code_mode` on a version that supports it. The skill checks for a way to save the WAV before synthesis. Speech generation and auditions use FFmpeg to verify saved WAVs.
+The bundled speech-generation skill handles saving, playback, and replay. On macOS it uses `afplay` for local playback. For Codex CLI sessions without native file delivery, the bundled Python helper saves the first authorized generation through the local Codex connection. Speech generation and auditions use FFmpeg to verify saved WAVs.
 
 ## Install in Claude Code
 
