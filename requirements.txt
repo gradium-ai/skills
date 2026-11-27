@@ -6,7 +6,7 @@ charset-normalizer==3.5.1
     # via requests
 idna==3.19
     # via requests
-pyyaml==6.0.3
+pyyaml==6.0.4
     # via -r requirements.in
 requests==2.34.2
     # via -r requirements.in
